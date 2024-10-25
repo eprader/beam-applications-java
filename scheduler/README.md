@@ -3,6 +3,7 @@
 Follow the steps below to apply the necessary roles, role bindings, service accounts, and cluster roles in your Kubernetes environment.
 
 Please make sure to create the statefun namespace before
+Also copy the FlinkJob.jar into the config_frameworks folder
 
 ### Step 1: Apply Role and RoleBinding for Default Namespace
 
