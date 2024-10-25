@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-creator-binding
+  namespace: statefun
+subjects:
+- kind: ServiceAccount
+  name: service-creator-account-statefun
+  namespace: statefun
+roleRef:
+  kind: Role
+  name: service-creator-role
+  apiGroup: rbac.authorization.k8s.io

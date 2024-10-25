@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler-deployment
+  labels:
+    app: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      serviceAccountName: service-creator-account
+      containers:
+      - name: scheduler
+        #image: jungerindy/scheduler:latest
+        image: scheduler-image:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: APPLICATION
+          value: "PRED"
+        - name: MONGODB 
+          value: "mongodb://adminuser:password123@192.168.58.2:32000/"
+        - name: DATASET
+          value: "SYS"
+        ports:
+        - containerPort: 9093
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "0.5"
+      restartPolicy: Always
