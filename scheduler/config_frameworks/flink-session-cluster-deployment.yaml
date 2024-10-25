@@ -1,0 +1,36 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  namespace: default
+  name: flink-session-cluster
+spec:
+  image: flink:1.18
+  flinkVersion: v1_18
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    metrics.reporter.prom.port: "9249"
+  serviceAccount: flink
+  podTemplate:
+    metadata:
+      # INFO:
+      # The label is required by Prometheus.
+      # Check https://github.com/prometheus-operator/kube-prometheus/issues/1392#issuecomment-1411719953.
+      labels:
+        release: prometheus
+    spec:
+      serviceAccount: flink
+      containers:
+        - name: flink-main-container
+          ports:
+            - containerPort: 9249
+              name: metrics
+              protocol: TCP
+  jobManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "2048m"
+      cpu: 1

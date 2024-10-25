@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statefun-starter-deployment
+  namespace: statefun
+  labels:
+    app: statefun-starter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: statefun-starter
+  template:
+    metadata:
+      labels:
+        app: statefun-starter
+    spec:
+      serviceAccountName: service-creator-account-statefun
+      containers:
+      - name: statefun-starter
+        image: jungerindy/statefunstarter:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: APPLICATION
+          value: "PRED"
+        - name: MONGODB 
+          value: "mongodb://adminuser:password123@10.52.2.218:32000/"
+        - name: DATASET
+          value: "FIT"
+        ports:
+        - containerPort: 9093
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "0.5"
+      restartPolicy: Always
