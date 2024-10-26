@@ -3,7 +3,7 @@ from kubernetes.client.exceptions import ApiException
 import logging
 import time
 import requests
-from framework_scheduler import FrameworkScheduler
+import utils.Utils
 
 
 class KubernetesService:
@@ -276,13 +276,13 @@ class KubernetesService:
         return len(endpoints.subsets) > 0
 
     def create_minio(self):
-        manifest = FrameworkScheduler.read_manifest("/app/minio.yaml")
+        manifest = utils.Utils.read_manifest("/app/minio.yaml")
         self.start_deployment_and_service(manifest)
 
     def create_statefun_environment(self):
         # Note this is a ConfigMap
-        manifest_module = FrameworkScheduler.read_manifest("/app/00-module.yaml")
-        manifest_runtime = FrameworkScheduler.read_manifest(
+        manifest_module = utils.Utils.read_manifest("/app/00-module.yaml")
+        manifest_runtime = utils.Utils.read_manifest(
             "/app/01-statefun-runtime.yaml"
         )
         self.start_deployment_and_service(manifest_module)
@@ -290,25 +290,25 @@ class KubernetesService:
 
     def create_statefun_starter(self, mongodb, dataset, application):
         # FIXME for remote running
-        manifest = FrameworkScheduler.read_manifest_statefun_starter(
+        manifest = utils.Utils.read_manifest_statefun_starter(
             "/app/statefunStarter-manifest.yaml", mongodb, dataset, application, True
         )
         self.start_deployment_and_service(manifest, True)
 
     def delete_minio(self):
-        manifest = FrameworkScheduler.read_manifest("/app/minio.yaml")
+        manifest = utils.Utils.read_manifest("/app/minio.yaml")
         self.terminate_deployment_and_service(manifest)
 
     def delete_statefun_environment(self):
-        manifest_module = FrameworkScheduler.read_manifest("/app/00-module.yaml")
-        manifest_runtime = FrameworkScheduler.read_manifest(
+        manifest_module =utils.Utils.read_manifest("/app/00-module.yaml")
+        manifest_runtime = utils.Utils.read_manifest(
             "/app/01-statefun-runtime.yaml"
         )
         self.terminate_deployment_and_service(manifest_module)
         self.terminate_deployment_and_service(manifest_runtime)
 
     def delete_statefun_starter(self):
-        manifest = FrameworkScheduler.read_manifest(
+        manifest = utils.Utils.read_manifest(
             "/app/statefunStarter-manifest.yaml"
         )
         self.terminate_deployment_and_service(manifest)
