@@ -1,65 +1,82 @@
 from metrics.metrics_collector import MetricsCollector
 from scheduler_logic.scheduler_logic import run_evaluation
+from database.database_access import store_decision_in_db
 import time
+import logging
 
 
 class EvaluationMonitor:
-    def __init__(self, running_framework, evaluation_event,periodic_checking_min=5, timeout_duration_min=10) -> None:
+    def __init__(
+        self,
+        running_framework,
+        evaluation_event,
+        periodic_checking_min=5,
+        timeout_duration_min=10,
+        sleep_interval_seconds=30,
+    ) -> None:
         self.interval_seconds = periodic_checking_min * 60
         self.metric_collector = MetricsCollector()
-        self.running_framework= running_framework
+        self.running_framework = running_framework
         self.evaluation_event = evaluation_event
-        self.timeout_duration_sec = timeout_duration_min*60 
-    
-        
+        self.timeout_duration_sec = timeout_duration_min * 60
+        self.sleep_interval = sleep_interval_seconds
 
-    def run_main(self):
-        periodic_checks = self.interval_seconds / 30
-        timeout_counter = self.timeout_duration_sec /30
+    def start_monitoring(self):
+        periodic_checks = self.interval_seconds / self.sleep_interval
+        timeout_counter = 0
         periodic_counter = 1
         while True:
-            if self.running_framework =="SF":
-                metrics = self.metric_collector.get_objectives_for_sf()
-                critical_metrics = self.metric_collector.get_critical_metrics_for_sf()
-            else:
-                metrics = self.metric_collector.get_objectives_for_sl()
-                critical_metrics = self.metric_collector.get_critical_metrics_for_sl()
+            metrics = self.collect_metrics()
             # FIXME
             # save metrics to db
+            if timeout_counter != 0:
+                timeout_counter -= 1
 
             if self.check_for_safety_net():
-                decision =run_evaluation()
-                if decision !=self.running_framework:
-                    self.handle_switch(decision)
-                else:
-                    self.store_decision_in_db()                
-            elif periodic_counter == periodic_checks:
-                decision =run_evaluation()
+                if self.evaluate_and_act():
+                    timeout_counter = self.timeout_duration_sec / self.sleep_interval
+            elif timeout_counter != 0 and periodic_counter == periodic_checks:
+                if self.evaluate_and_act():
+                    timeout_counter = self.timeout_duration_sec / self.sleep_interval
                 periodic_counter = 0
-                if decision !=self.running_framework:
-                    self.handle_switch(decision)
-                else:
-                    self.store_decision_in_db()
+
             periodic_counter += 1
-            time.sleep(30)
+            time.sleep(self.sleep_interval)
 
     # FIXME
     def check_for_safety_net(self, critical_metrics):
         pass
         # Return True if there is a safety cause
 
-    #FIXME
-    def store_decision_in_db(self, decision):
-        pass
+    def collect_metrics(self):
+        try:
+            if self.running_framework == "SF":
+                return (
+                    self.metric_collector.get_objectives_for_sf(),
+                    self.metric_collector.get_critical_metrics_for_sf(),
+                )
+            else:
+                return (
+                    self.metric_collector.get_objectives_for_sl(),
+                    self.metric_collector.get_critical_metrics_for_sl(),
+                )
+        except Exception as e:
+            logging.error(f"Failed to collect metrics: {e}")
+            return None, None
 
-    #FIXME
+    def evaluate_and_act(self):
+        decision = run_evaluation()
+        if decision != self.running_framework:
+            self.handle_switch(decision)
+            return True
+        else:
+            store_decision_in_db(self.running_framework)
+            return False
+
+    # FIXME
     def handle_switch(self, decision):
         self.evaluation_event.set()
-        self.store_decision_in_db(decision)
-        while True:
-            if not self.evaluation_event.is_set():
-                break
-            else:
-                time.sleep(30)
-
-
+        store_decision_in_db(decision)
+        while self.evaluation_event.is_set():
+            time.sleep(30)
+        self.running_framework = decision
