@@ -3,6 +3,16 @@ import os
 import signal
 import sys
 from framework_scheduling.framework_scheduler import FrameworkScheduler
+from enum import Enum
+import threading
+
+class Framework(Enum):
+    SF = ("SF", [])
+    SL = ("SL", [])
+
+    def __init__(self, name, critical_metrics):
+        self.name = name
+        self.critical_metrics = critical_metrics
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -24,6 +34,7 @@ def cleanup(framework_scheduler: FrameworkScheduler):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, handle_sigterm)
     is_serverful_framework_used = True
+    evaluation_event = threading.Event()
     framework_scheduler = FrameworkScheduler(is_serverful_framework_used)
     try:
         application = os.getenv("APPLICATION")
@@ -41,6 +52,14 @@ if __name__ == "__main__":
         framework_scheduler.debug_run(
             manifest_docs_flink_session_cluster, application, dataset, mongodb_address
         )
+        scheduler_thread = threading.Thread(target=framework_scheduler.debug_run, name="FrameworkSchedulerThread")
+        monitor_thread = threading.Thread(target=metrics_monitor.start, name="MetricsMonitorThread")
+
+        scheduler_thread.start()
+        monitor_thread.start()
+
+        scheduler_thread.join()
+        monitor_thread.join()
     except KeyboardInterrupt:
         logging.info("Shutting down")
     except Exception as e:
