@@ -1,6 +1,8 @@
 from metrics.metrics_collector import MetricsCollector
 from scheduler_logic.scheduler_logic import run_evaluation
 from database.database_access import store_decision_in_db
+from main import Framework
+from threading import Event
 import time
 import logging
 
@@ -8,8 +10,8 @@ import logging
 class EvaluationMonitor:
     def __init__(
         self,
-        running_framework,
-        evaluation_event,
+        running_framework:Framework,
+        evaluation_event:Event,
         periodic_checking_min=5,
         timeout_duration_min=10,
         sleep_interval_seconds=30,
@@ -44,22 +46,23 @@ class EvaluationMonitor:
             time.sleep(self.sleep_interval)
 
     # FIXME
-    def check_for_safety_net(self, critical_metrics):
+    def check_for_safety_net(self, critical_metrics:dict):
         pass
         # Return True if there is a safety cause
 
     def collect_metrics(self):
         try:
-            if self.running_framework == "SF":
+            if self.running_framework is Framework.SF:
                 return (
                     self.metric_collector.get_objectives_for_sf(),
                     self.metric_collector.get_critical_metrics_for_sf(),
                 )
-            else:
+            elif self.running_framework is Framework.SL:
                 return (
                     self.metric_collector.get_objectives_for_sl(),
                     self.metric_collector.get_critical_metrics_for_sl(),
                 )
+            raise Exception("No valid Framework is given")
         except Exception as e:
             logging.error(f"Failed to collect metrics: {e}")
             return None, None
@@ -74,7 +77,7 @@ class EvaluationMonitor:
             return False
 
     # FIXME
-    def handle_switch(self, decision):
+    def handle_switch(self, decision:Framework):
         self.evaluation_event.set()
         store_decision_in_db(decision)
         while self.evaluation_event.is_set():
