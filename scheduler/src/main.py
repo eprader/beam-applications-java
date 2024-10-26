@@ -3,16 +3,9 @@ import os
 import signal
 import sys
 from framework_scheduling.framework_scheduler import FrameworkScheduler
-from enum import Enum
+import scheduler_logic.evaluation_monitor
 import threading
-
-class Framework(Enum):
-    SF = ("SF", [])
-    SL = ("SL", [])
-
-    def __init__(self, name, critical_metrics):
-        self.name = name
-        self.critical_metrics = critical_metrics
+import utils.Utils
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -27,15 +20,22 @@ def handle_sigterm(signum, frame):
     exit(0)
 
 
-def cleanup(framework_scheduler: FrameworkScheduler):
+def cleanup(
+    framework_scheduler: FrameworkScheduler,
+):
     framework_scheduler.cleanup()
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, handle_sigterm)
-    is_serverful_framework_used = True
+    framework_used = utils.Utils.Framework.SF
     evaluation_event = threading.Event()
-    framework_scheduler = FrameworkScheduler(is_serverful_framework_used)
+    evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(framework_used,evaluation_event)
+    evaluation_monitor.start_monitoring()
+    exit()
+    framework_scheduler = FrameworkScheduler(
+        framework_used, evaluation_event
+    )
     try:
         application = os.getenv("APPLICATION")
         mongodb_address = os.getenv("MONGODB")
@@ -45,15 +45,21 @@ if __name__ == "__main__":
         path_manifest_flink_session_cluster = (
             "/app/flink-session-cluster-deployment.yaml"
         )
-        manifest_docs_flink_session_cluster = FrameworkScheduler.read_manifest(
-            path_manifest_flink_session_cluster
+        manifest_docs_flink_session_cluster = (
+           utils.Utils.read_manifest(
+                path_manifest_flink_session_cluster
+            )
         )
         # framework_scheduler.main_run(manifest_docs_flink_session_cluster, application, dataset, mongodb_address)
         framework_scheduler.debug_run(
             manifest_docs_flink_session_cluster, application, dataset, mongodb_address
         )
-        scheduler_thread = threading.Thread(target=framework_scheduler.debug_run, name="FrameworkSchedulerThread")
-        monitor_thread = threading.Thread(target=metrics_monitor.start, name="MetricsMonitorThread")
+        scheduler_thread = threading.Thread(
+            target=framework_scheduler.debug_run, name="FrameworkSchedulerThread"
+        )
+        monitor_thread = threading.Thread(
+            target=metrics_monitor.start, name="MetricsMonitorThread"
+        )
 
         scheduler_thread.start()
         monitor_thread.start()
