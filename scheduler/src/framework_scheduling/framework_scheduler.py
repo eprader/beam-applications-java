@@ -11,11 +11,12 @@ import struct
 import signal
 from kubernetes.stream import portforward
 from kubernetes_service import KubernetesService
+from main import Framework
 
 
 class FrameworkScheduler:
-    def __init__(self, is_serverful_framework_used):
-        self.is_serverful_framework_used = is_serverful_framework_used
+    def __init__(self, framework: Framework):
+        self.framework_used = framework
         self.kubernetes_service = KubernetesService()
         consumer = KafkaConsumer(
             "scheduler-input",
@@ -61,8 +62,7 @@ class FrameworkScheduler:
         try:
             self.consumer.close()
             self.producer.close()
-            self.is_serverful_framework_used
-            if is_serverful_framework_used:
+            if self.framework_used == Framework.SF:
                 path_manifest_flink_session_cluster = (
                     "/app/flink-session-cluster-deployment.yaml"
                 )
@@ -86,7 +86,7 @@ class FrameworkScheduler:
             serverful_topic = "train-source"
 
         if not is_deployed:
-            if is_serverful_framework_used:
+            if self.framework_used == Framework.SF:
                 self.kubernetes_service.create_serverful_framework(
                     dataset, manifest_docs, mongodb, application
                 )
@@ -102,7 +102,7 @@ class FrameworkScheduler:
             if message:
                 for tp, messages in message.items():
                     for msg in messages:
-                        if is_serverful_framework_used:
+                        if self.framework_used == Framework.SF:
                             self.producer.send(
                                 serverful_topic,
                                 key=struct.pack(">Q", int(time.time() * 1000)),
@@ -130,16 +130,12 @@ class FrameworkScheduler:
     def debug_run(self, manifest_docs, application, dataset, mongodb):
         is_deployed = False
         number_sent_messages = 0
-
-        global is_serverful_framework_used
-        is_serverful_framework_used = False
-
         serverful_topic = "senml-cleaned"
         if application == "TRAIN":
             serverful_topic = "train-source"
 
         while True:
-            if is_serverful_framework_used:
+            if self.framework_used == Framework.SF:
                 if not is_deployed:
                     self.kubernetes_service.create_serverful_framework(
                         dataset, manifest_docs, mongodb, application
