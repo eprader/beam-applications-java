@@ -5,6 +5,12 @@ class Framework(Enum):
     SF = 1
     SL = 2
 
+
+def get_opposite_framework(current_framework:Framework):
+    if current_framework == Framework.SF:
+        return Framework.SL
+    return Framework.SF
+
 def read_manifest_statefun_starter(
     path_manifest, mongodb, dataset, application, run_locally=False
 ):
