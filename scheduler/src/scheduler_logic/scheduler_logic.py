@@ -1,4 +1,6 @@
 import numpy as np
+import utils
+import utils.Utils
 
 def calculate_utility_value(throughput, latency, cpu, weights):
     w1, w2, w3 = weights
@@ -32,12 +34,12 @@ def normalize_throughput(throughput):
 
 
 #FIXME
-def run_evaluation(current_framework):
+def run_evaluation(current_framework:utils.Utils.Framework):
     """
     Return either SL or SF
     Adds latency penalty to not running framework
     """
-    pass
+    return current_framework
 
 def main(user_weights):
     metrics_sf = [600, 130, 0.60]
