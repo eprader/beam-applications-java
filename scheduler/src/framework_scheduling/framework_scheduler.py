@@ -2,21 +2,18 @@ from kafka import KafkaConsumer, KafkaProducer
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 import time
-import yaml
-import os
-import requests
 import logging
-import sys
 import struct
-import signal
 from kubernetes.stream import portforward
-from kubernetes_service import KubernetesService
-from main import Framework
+from framework_scheduling.kubernetes_service import KubernetesService
+from threading import Event
+import utils.Utils
 
 
 class FrameworkScheduler:
-    def __init__(self, framework: Framework):
+    def __init__(self, framework: utils.Utils.Framework, evaluation_event:Event):
         self.framework_used = framework
+        self.evaluation_event = evaluation_event
         self.kubernetes_service = KubernetesService()
         consumer = KafkaConsumer(
             "scheduler-input",
@@ -28,41 +25,11 @@ class FrameworkScheduler:
             value_serializer=lambda v: v.encode("utf-8") if isinstance(v, str) else v,
         )
 
-    @staticmethod
-    def read_manifest_statefun_starter(
-        path_manifest, mongodb, dataset, application, run_locally=False
-    ):
-        with open(path_manifest, "r") as f:
-            manifest = list(yaml.safe_load_all(f))
-        for item in manifest:
-            if item["kind"] == "Deployment":
-                containers = item["spec"]["template"]["spec"]["containers"]
-                for container in containers:
-                    if run_locally:
-                        container["imagePullPolicy"] = "IfNotPresent"
-                    else:
-                        container["imagePullPolicy"] = "Always"
-                    env_vars = container.get("env", [])
-                    for env in env_vars:
-                        if env["name"] == "MONGODB":
-                            env["value"] = mongodb
-                        elif env["name"] == "DATASET":
-                            env["value"] = dataset
-                        elif env["name"] == "APPLICATION":
-                            env["value"] = application
-        return manifest
-
-    @staticmethod
-    def read_manifest(path_manifest):
-        with open(path_manifest, "r") as f:
-            manifest = list(yaml.safe_load_all(f))
-        return manifest
-
     def cleanup(self):
         try:
             self.consumer.close()
             self.producer.close()
-            if self.framework_used == Framework.SF:
+            if self.framework_used ==  utils.Utils.Framework.SF:
                 path_manifest_flink_session_cluster = (
                     "/app/flink-session-cluster-deployment.yaml"
                 )
@@ -86,7 +53,7 @@ class FrameworkScheduler:
             serverful_topic = "train-source"
 
         if not is_deployed:
-            if self.framework_used == Framework.SF:
+            if self.framework_used ==  utils.Utils.Framework.SF:
                 self.kubernetes_service.create_serverful_framework(
                     dataset, manifest_docs, mongodb, application
                 )
@@ -98,11 +65,15 @@ class FrameworkScheduler:
                 is_deployed = True
 
         while True:
+
+            if self.evaluation_event.is_set():
+                self.kubernetes_service.make_change(self.framework_used)
+
             message = self.consumer.poll(timeout_ms=5000)
             if message:
                 for tp, messages in message.items():
                     for msg in messages:
-                        if self.framework_used == Framework.SF:
+                        if self.framework_used ==  utils.Utils.Framework.SF:
                             self.producer.send(
                                 serverful_topic,
                                 key=struct.pack(">Q", int(time.time() * 1000)),
@@ -135,7 +106,7 @@ class FrameworkScheduler:
             serverful_topic = "train-source"
 
         while True:
-            if self.framework_used == Framework.SF:
+            if self.framework_used == utils.Utils.Framework.SF:
                 if not is_deployed:
                     self.kubernetes_service.create_serverful_framework(
                         dataset, manifest_docs, mongodb, application
