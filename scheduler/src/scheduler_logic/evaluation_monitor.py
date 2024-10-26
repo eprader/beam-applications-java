@@ -1,23 +1,22 @@
-from metrics.metrics_collector import MetricsCollector
-from scheduler_logic.scheduler_logic import run_evaluation
-from database.database_access import store_decision_in_db
-from main import Framework
-from threading import Event
+import metrics.metrics_collector
+import scheduler_logic.scheduler_logic
+import database.database_access
+import threading
 import time
 import logging
+import utils.Utils
 
 
 class EvaluationMonitor:
     def __init__(
         self,
-        running_framework:Framework,
-        evaluation_event:Event,
-        periodic_checking_min=5,
+        running_framework: utils.Utils.Framework,
+        evaluation_event: threading.Event,
+        periodic_checking_min=1,
         timeout_duration_min=10,
         sleep_interval_seconds=30,
     ) -> None:
         self.interval_seconds = periodic_checking_min * 60
-        self.metric_collector = MetricsCollector()
         self.running_framework = running_framework
         self.evaluation_event = evaluation_event
         self.timeout_duration_sec = timeout_duration_min * 60
@@ -37,7 +36,8 @@ class EvaluationMonitor:
             if self.check_for_safety_net():
                 if self.evaluate_and_act():
                     timeout_counter = self.timeout_duration_sec / self.sleep_interval
-            elif timeout_counter != 0 and periodic_counter == periodic_checks:
+            elif timeout_counter == 0 and periodic_counter == periodic_checks:
+                logging.info("Periodical check-up")
                 if self.evaluate_and_act():
                     timeout_counter = self.timeout_duration_sec / self.sleep_interval
                 periodic_counter = 0
@@ -46,21 +46,21 @@ class EvaluationMonitor:
             time.sleep(self.sleep_interval)
 
     # FIXME
-    def check_for_safety_net(self, critical_metrics:dict):
+    def check_for_safety_net(self):
         pass
         # Return True if there is a safety cause
 
     def collect_metrics(self):
         try:
-            if self.running_framework is Framework.SF:
+            if self.running_framework is utils.Utils.Framework.SF:
                 return (
-                    self.metric_collector.get_objectives_for_sf(),
-                    self.metric_collector.get_critical_metrics_for_sf(),
+                    metrics.metrics_collector.get_objectives_for_sf(),
+                    metrics.metrics_collector.get_critical_metrics_for_sf(),
                 )
-            elif self.running_framework is Framework.SL:
+            elif self.running_framework is utils.Utils.Framework.SL:
                 return (
-                    self.metric_collector.get_objectives_for_sl(),
-                    self.metric_collector.get_critical_metrics_for_sl(),
+                    metrics.metrics_collector.get_objectives_for_sl(),
+                    metrics.metrics_collector.get_critical_metrics_for_sl(),
                 )
             raise Exception("No valid Framework is given")
         except Exception as e:
@@ -68,18 +68,19 @@ class EvaluationMonitor:
             return None, None
 
     def evaluate_and_act(self):
-        decision = run_evaluation()
+        decision = scheduler_logic.scheduler_logic.run_evaluation(self.running_framework)
         if decision != self.running_framework:
             self.handle_switch(decision)
             return True
         else:
-            store_decision_in_db(self.running_framework)
+            database.database_access.store_decision_in_db(self.running_framework)
             return False
 
     # FIXME
-    def handle_switch(self, decision:Framework):
+    def handle_switch(self, decision: utils.Utils.Framework):
         self.evaluation_event.set()
-        store_decision_in_db(decision)
+        database.database_access.store_decision_in_db(decision)
         while self.evaluation_event.is_set():
             time.sleep(30)
+            logging.info("Waiting for event to unset")
         self.running_framework = decision
