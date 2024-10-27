@@ -5,7 +5,7 @@ import time
 import logging
 import struct
 from kubernetes.stream import portforward
-from framework_scheduling.kubernetes_service import KubernetesService
+import framework_scheduling.kubernetes_service
 from threading import Event
 import utils.Utils
 
@@ -14,7 +14,6 @@ class FrameworkScheduler:
     def __init__(self, framework: utils.Utils.Framework, evaluation_event:Event):
         self.framework_used = framework
         self.evaluation_event = evaluation_event
-        self.kubernetes_service = KubernetesService()
         consumer = KafkaConsumer(
             "scheduler-input",
             bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
@@ -36,11 +35,11 @@ class FrameworkScheduler:
                 manifest_docs_flink_session_cluster = FrameworkScheduler.read_manifest(
                     path_manifest_flink_session_cluster
                 )
-                self.kubernetes_service.terminate_serverful_framework(
+                framework_scheduling.kubernetes_service.terminate_serverful_framework(
                     manifest_docs_flink_session_cluster
                 )
             else:
-                self.kubernetes_service.terminate_serverless_framework()
+                framework_scheduling.kubernetes_service.terminate_serverless_framework()
         except Exception as e:
             logging.error(f"Cleanup error: {e}")
 
@@ -54,12 +53,12 @@ class FrameworkScheduler:
 
         if not is_deployed:
             if self.framework_used ==  utils.Utils.Framework.SF:
-                self.kubernetes_service.create_serverful_framework(
+                framework_scheduling.kubernetes_service.create_serverful_framework(
                     dataset, manifest_docs, mongodb, application
                 )
                 is_deployed = True
             else:
-                self.kubernetes_service.create_serverless_framework(
+                framework_scheduling.kubernetes_service.create_serverless_framework(
                     mongodb, dataset, application
                 )
                 is_deployed = True
@@ -67,7 +66,7 @@ class FrameworkScheduler:
         while True:
 
             if self.evaluation_event.is_set():
-                self.kubernetes_service.make_change(self.framework_used)
+               framework_scheduling.kubernetes_service.make_change(self.framework_used)
 
             message = self.consumer.poll(timeout_ms=5000)
             if message:
@@ -108,7 +107,7 @@ class FrameworkScheduler:
         while True:
             if self.framework_used == utils.Utils.Framework.SF:
                 if not is_deployed:
-                    self.kubernetes_service.create_serverful_framework(
+                    framework_scheduling.kubernetes_service.create_serverful_framework(
                         dataset, manifest_docs, mongodb, application
                     )
                     is_deployed = True
@@ -122,7 +121,7 @@ class FrameworkScheduler:
                 logging.info("send message for serverful")
             else:
                 if not is_deployed:
-                    self.kubernetes_service.create_serverless_framework(
+                    framework_scheduling.kubernetes_service.create_serverless_framework(
                         mongodb, dataset, application
                     )
                     is_deployed = True
