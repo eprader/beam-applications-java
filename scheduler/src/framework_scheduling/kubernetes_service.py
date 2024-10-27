@@ -354,3 +354,7 @@ def terminate_deployment_and_service(manifest_docs):
                 name=name, namespace="statefun"
             )
             logging.info(f"ConfigMap '{name}' deleted.")
+
+#FIXME
+def make_change(framework_used:utils.Utils.Framework):
+    pass
