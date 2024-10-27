@@ -8,3 +8,4 @@ logs/
 
 *.jar
 
+*.pytest_cache
