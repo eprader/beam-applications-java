@@ -1,5 +1,4 @@
 import numpy as np
-import utils
 import utils.Utils
 
 def calculate_utility_value(throughput, latency, cpu, weights):
@@ -19,7 +18,7 @@ def normalize_dataset(data):
 
 def normalize_weights(weights_list):
     total_sum = sum(weights_list)
-    normalized_weights = [w / total_sum for w in weights]
+    normalized_weights = [w / total_sum for w in weights_list]
     return normalized_weights
 
 
