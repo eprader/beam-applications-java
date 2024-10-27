@@ -5,6 +5,7 @@ import sys
 from framework_scheduling.framework_scheduler import FrameworkScheduler
 import scheduler_logic.evaluation_monitor
 import threading
+import scheduler_logic.scheduler_logic
 import utils.Utils
 
 logging.basicConfig(
@@ -31,8 +32,6 @@ if __name__ == "__main__":
     framework_used = utils.Utils.Framework.SF
     evaluation_event = threading.Event()
     evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(framework_used,evaluation_event)
-    evaluation_monitor.start_monitoring()
-    exit()
     framework_scheduler = FrameworkScheduler(
         framework_used, evaluation_event
     )
