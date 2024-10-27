@@ -21,5 +21,6 @@ class LoadPredictor:
         end = start + forecast_periods - 1
         return model.predict(start=start, end=end)
 
+    #FIXME
     def update_model(value):
         raise NotImplementedError

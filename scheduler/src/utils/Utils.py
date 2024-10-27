@@ -1,15 +1,17 @@
 import yaml
 from enum import Enum
 
+
 class Framework(Enum):
     SF = 1
     SL = 2
 
 
-def get_opposite_framework(current_framework:Framework):
+def get_opposite_framework(current_framework: Framework):
     if current_framework == Framework.SF:
         return Framework.SL
     return Framework.SF
+
 
 def read_manifest_statefun_starter(
     path_manifest, mongodb, dataset, application, run_locally=False
@@ -33,6 +35,7 @@ def read_manifest_statefun_starter(
                     elif env["name"] == "APPLICATION":
                         env["value"] = application
     return manifest
+
 
 def read_manifest(path_manifest):
     with open(path_manifest, "r") as f:
