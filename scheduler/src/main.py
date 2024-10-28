@@ -29,12 +29,6 @@ def cleanup(
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, handle_sigterm)
-    framework_used = utils.Utils.Framework.SF
-    evaluation_event = threading.Event()
-    evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(framework_used,evaluation_event)
-    framework_scheduler = FrameworkScheduler(
-        framework_used, evaluation_event
-    )
     try:
         application = os.getenv("APPLICATION")
         mongodb_address = os.getenv("MONGODB")
@@ -49,15 +43,20 @@ if __name__ == "__main__":
                 path_manifest_flink_session_cluster
             )
         )
-        # framework_scheduler.main_run(manifest_docs_flink_session_cluster, application, dataset, mongodb_address)
-        framework_scheduler.debug_run(
-            manifest_docs_flink_session_cluster, application, dataset, mongodb_address
-        )
+        framework_used = utils.Utils.Framework.SF
+        evaluation_event = threading.Event()
+        evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(framework_used,evaluation_event, application, dataset)
+        framework_scheduler = FrameworkScheduler(
+        framework_used, evaluation_event
+            )
         scheduler_thread = threading.Thread(
-            target=framework_scheduler.debug_run, name="FrameworkSchedulerThread"
+            target=framework_scheduler.main_run,
+            args=(manifest_docs_flink_session_cluster, application, dataset, mongodb_address),
+            name="FrameworkSchedulerThread"
         )
         monitor_thread = threading.Thread(
-            target=metrics_monitor.start, name="MetricsMonitorThread"
+            target=evaluation_monitor.start_monitoring,
+            name="MetricsMonitorThread"
         )
 
         scheduler_thread.start()
@@ -65,10 +64,11 @@ if __name__ == "__main__":
 
         scheduler_thread.join()
         monitor_thread.join()
+
     except KeyboardInterrupt:
         logging.info("Shutting down")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"An error occurred in the main class: {e}")
 
     finally:
         cleanup(framework_scheduler)
