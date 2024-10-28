@@ -194,7 +194,7 @@ def test_main_loop_logic_serverless(mock_framework_scheduler):
     serverful_topic = "senml-cleaned"
     number_sent_messages_serverful = 0
     number_sent_messages_serverless = 0
-    scheduler.framework_used = utils.Utils.Framework.SF
+    scheduler.framework_used = utils.Utils.Framework.SL
     scheduler.main_loop_logic(
         serverful_topic, number_sent_messages_serverful, number_sent_messages_serverless
     )
