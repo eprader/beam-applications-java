@@ -12,11 +12,15 @@ class EvaluationMonitor:
         self,
         running_framework: utils.Utils.Framework,
         evaluation_event: threading.Event,
+        application,
+        dataset,
         periodic_checking_min=1,
         timeout_duration_min=10,
         sleep_interval_seconds=30,
     ) -> None:
         self.interval_seconds = periodic_checking_min * 60
+        self.application = application
+        self.dataset = dataset
         self.running_framework = running_framework
         self.evaluation_event = evaluation_event
         self.timeout_duration_sec = timeout_duration_min * 60
