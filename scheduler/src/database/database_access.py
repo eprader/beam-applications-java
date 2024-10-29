@@ -66,7 +66,7 @@ def init_database():
         conn.close()
 
 
-def insert_scheduler_metrics(timestamp:datetime, latency:float, cpu_load:float, throughput:float, framework:str):
+def insert_scheduler_metrics(timestamp: datetime, metrics_dict: dict, framework: str):
     table_name = "scheduler_metrics"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -76,7 +76,13 @@ def insert_scheduler_metrics(timestamp:datetime, latency:float, cpu_load:float, 
         INSERT INTO {table_name} (timestamp, latency, cpu_load, throughput, framework)
         VALUES (%s, %s, %s, %s, %s)
         """
-        data = (timestamp, latency, cpu_load, throughput, framework)
+        data = (
+            timestamp,
+            metrics_dict["latency"],
+            metrics_dict["cpu_load"],
+            metrics_dict["throughput"],
+            framework,
+        )
 
         cursor.execute(insert_query, data)
         conn.commit()
@@ -88,7 +94,7 @@ def insert_scheduler_metrics(timestamp:datetime, latency:float, cpu_load:float, 
         conn.close()
 
 
-def store_decision_in_db(timestamp:datetime, decision:str):
+def store_decision_in_db(timestamp: datetime, decision: str):
     start_times_table_name = "framework_start_times"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -108,6 +114,5 @@ def store_decision_in_db(timestamp:datetime, decision:str):
         print(f"Error inserting framework start time: {e}")
 
     finally:
-        # Clean up
         cursor.close()
         conn.close()
