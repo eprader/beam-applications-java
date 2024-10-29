@@ -4,8 +4,9 @@ import framework_scheduling.kubernetes_service as k8s_service
 
 
 def test_delete_all_jobs_from_serverful_framework():
-    with patch("framework_scheduling.kubernetes_service.get_jobid_of_running_job", return_value=["job1", "job2"]), \
-         patch("framework_scheduling.kubernetes_service.stop_flink_job") as mock_stop:
+    with patch("framework_scheduling.kubernetes_service.get_jobid_of_running_job", autospec=True,return_value=["job1", "job2"]), \
+         patch("framework_scheduling.kubernetes_service.stop_flink_job",
+               autospec=True) as mock_stop:
         
         k8s_service.delete_all_jobs_from_serverful_framework()
         mock_stop.assert_any_call("flink-session-cluster-rest", "job1")
@@ -22,7 +23,7 @@ def test_is_flink_deployment_ready():
 
 def test_wait_for_flink_deployment():
     with patch("time.sleep", return_value=None), \
-         patch("framework_scheduling.kubernetes_service.is_flink_deployment_ready", return_value=True):
+         patch("framework_scheduling.kubernetes_service.is_flink_deployment_ready", return_value=True,autospec=True):
         
         mock_k8s_api = MagicMock()
         assert k8s_service.wait_for_flink_deployment(mock_k8s_api, "flink-app")
@@ -30,8 +31,8 @@ def test_wait_for_flink_deployment():
 
 def test_start_flink_deployment():
     mock_k8s_api = MagicMock()
-    with patch("framework_scheduling.kubernetes_service.client.CustomObjectsApi", return_value=mock_k8s_api), \
-         patch("framework_scheduling.kubernetes_service.wait_for_flink_deployment", return_value=True), \
+    with patch("framework_scheduling.kubernetes_service.client.CustomObjectsApi", return_value=mock_k8s_api,autospec=True), \
+         patch("framework_scheduling.kubernetes_service.wait_for_flink_deployment", return_value=True,autospec=True), \
          patch("framework_scheduling.kubernetes_service.config.load_incluster_config"):
         
         path_manifest = [{"kind": "FlinkDeployment", "metadata": {"name": "test-deployment"}}]
@@ -88,8 +89,8 @@ def test_stop_flink_job():
 def test_start_deployment_and_service():
     with patch("framework_scheduling.kubernetes_service.client.CoreV1Api"), \
          patch("framework_scheduling.kubernetes_service.client.AppsV1Api"), \
-         patch("framework_scheduling.kubernetes_service.wait_for_deployment_and_service", return_value=True), \
-         patch("framework_scheduling.kubernetes_service.wait_for_deployment", return_value=True), \
+         patch("framework_scheduling.kubernetes_service.wait_for_deployment_and_service", autospec=True,return_value=True), \
+         patch("framework_scheduling.kubernetes_service.wait_for_deployment", autospec=True,return_value=True), \
          patch("framework_scheduling.kubernetes_service.config.load_incluster_config"):
         
         path_manifest = [{"kind": "Deployment", "metadata": {"name": "test-deployment"}},
@@ -102,8 +103,8 @@ def test_start_deployment_and_service():
 
 
 def test_delete_minio():
-    with patch("framework_scheduling.kubernetes_service.terminate_deployment_and_service"), \
-         patch("framework_scheduling.kubernetes_service.utils.Utils.read_manifest", return_value=[]):
+    with patch("framework_scheduling.kubernetes_service.terminate_deployment_and_service",autospec=True), \
+         patch("framework_scheduling.kubernetes_service.utils.Utils.read_manifest", autospec=True,return_value=[]):
         
         try:
             k8s_service.delete_minio()

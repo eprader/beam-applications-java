@@ -11,25 +11,25 @@ import time
 @pytest.fixture
 def mock_framework_scheduler():
     with patch(
-        "framework_scheduling.framework_scheduler.KafkaConsumer"
+        "framework_scheduling.framework_scheduler.KafkaConsumer",autospec=True
     ) as MockConsumer, patch(
-        "framework_scheduling.framework_scheduler.KafkaProducer"
+        "framework_scheduling.framework_scheduler.KafkaProducer",autospec=True
     ) as MockProducer, patch(
         "framework_scheduling.kubernetes_service.terminate_serverful_framework",
-        new=MagicMock(),
+        autospec=True
     ) as mock_terminate_serverful, patch(
         "framework_scheduling.kubernetes_service.terminate_serverless_framework",
-        new=MagicMock(),
+       autospec=True
     ) as mock_terminate_serverless, patch(
         "framework_scheduling.kubernetes_service.create_serverful_framework",
-        new=MagicMock(),
+       autospec=True
     ) as mock_create_serverful, patch(
         "framework_scheduling.kubernetes_service.create_serverless_framework",
-        new=MagicMock(),
+      autospec=True
     ) as mock_create_serverless, patch(
-        "utils.Utils.read_manifest", new=MagicMock()
+        "utils.Utils.read_manifest",autospec=True
     ) as mock_read_manifest, patch(
-        "framework_scheduling.kubernetes_service.make_change", new=MagicMock()
+        "framework_scheduling.kubernetes_service.make_change", autospec=True
     ) as mock_make_change:
 
         mock_consumer_instance = MockConsumer.return_value
