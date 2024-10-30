@@ -1,6 +1,7 @@
 import numpy as np
 import utils.Utils
 
+
 def calculate_utility_value(throughput, latency, cpu, weights):
     w1, w2, w3 = weights
     utility = w1 * throughput - w2 * latency - w3 * cpu
@@ -32,13 +33,47 @@ def normalize_throughput(throughput):
     return (throughput - throughput_min) / (throughput_max - throughput_min)
 
 
-#FIXME
-def run_evaluation(current_framework:utils.Utils.Framework):
+# FIXME
+def run_evaluation(current_framework: utils.Utils.Framework):
     """
     Return either SL or SF
-    Adds latency penalty to not running framework
+    Add latency penalty to not running framework, only one value
     """
     return current_framework
+
+
+def compute_entropy(metrics_sf, metrics_sl, metric_name, k=3, n=2):
+    sf_value = metrics_sf[metric_name]
+    sl_value = metrics_sl[metric_name]
+
+    if sf_value <= 0 or sl_value <= 0:
+        raise ValueError(
+            f"Metric values for {metric_name} must be positive and non-zero."
+        )
+
+    entropy_sum = sf_value * np.log10(sf_value) + sl_value * np.log10(sl_value)
+    return (-1.0 / np.log10(k)) * entropy_sum
+
+
+def compute_degree_of_divergence(entropy):
+    return 1 - entropy
+
+
+def calculate_weights_with_entropy(metrics_sf: dict, metrics_sl: dict):
+    divergence_sum = 0
+    divergence_dict = dict()
+    for metric in metrics_sf.keys():
+        entropy = compute_entropy(metrics_sf, metrics_sl, metric)
+        divergence = compute_degree_of_divergence(entropy)
+        divergence_dict[metric] = divergence
+        divergence_sum += divergence
+
+    weights_dict = {
+        metric: divergence / divergence_sum
+        for metric, divergence in divergence_dict.items()
+    }
+    return weights_dict
+
 
 def main(user_weights):
     metrics_sf = [600, 130, 0.60]
