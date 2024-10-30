@@ -1,5 +1,13 @@
 import logging
 import requests
+import json
+from kafka import KafkaConsumer
+
+
+kafka_consumer = KafkaConsumer(
+    "pred-publish",
+    bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+)
 
 
 def read_metric_from_prometheus(metric_name):
@@ -127,6 +135,7 @@ def get_objectives_for_sf():
     return objectives
 
 
+# FIXME: Decide based on application, which value to take
 def filter_num_records_out_sf(values):
     pass
 
@@ -143,9 +152,13 @@ def get_objectives_for_sl(application):
             "flink_taskmanager_job_task_operator_functions_pred_mqttPublishTrain_outLocalRate"
         )
     objectives_sl.append("flink_taskmanager_Status_JVM_CPU_Load")
+    objectives_sl.append("latency")
     objectives = {}
 
     for metric in objectives_sl:
+        if metric == "latency":
+            objectives[metric] = float(get_latest_latency_value_sl())
+
         values = read_metric_from_prometheus(metric)
         numeric_value = filter_objectives_sl(values)
 
@@ -157,6 +170,25 @@ def get_objectives_for_sl(application):
             logging.warning(f"No values returned for {metric}")
 
     return objectives
+
+
+def get_latest_latency_value_sl():
+    try:
+        message = next(kafka_consumer.poll(timeout_ms=1000).values())
+        if message:
+            # Deserialize the message if it's in JSON format
+            message_value = json.loads(message[0].value.decode("utf-8"))
+            logging.info(f"Latest message from 'pred-publish': {message_value}")
+            return message_value
+        else:
+            logging.warning("No new messages in 'pred-publish' topic.")
+            return None
+    except StopIteration:
+        logging.warning("No new messages in 'pred-publish' topic.")
+        return None
+    except Exception as e:
+        logging.error(f"Error fetching message from Kafka: {e}")
+        return None
 
 
 def filter_objectives_sl(response):
