@@ -42,8 +42,6 @@ class EvaluationMonitor:
         timeout_counter = self.timeout_counter
         periodic_counter = self.periodic_counter
         metrics = self.collect_metrics()
-        # FIXME
-        # save metrics to db
         database.database_access.insert_scheduler_metrics(datetime.now(),metrics[0], self.running_framework.name)
         if self.check_for_safety_net(metrics[1]) and timeout_counter == 0:
             if self.evaluate_and_act():
@@ -87,12 +85,12 @@ class EvaluationMonitor:
         try:
             if self.running_framework is utils.Utils.Framework.SF:
                 return (
-                    metrics.metrics_collector.get_objectives_for_sf(),
-                    metrics.metrics_collector.get_critical_metrics_for_sf(),
+                    metrics.metrics_collector.get_objectives_for_sf(self.application),
+                    metrics.metrics_collector.get_critical_metrics_for_sf(self.application),
                 )
             elif self.running_framework is utils.Utils.Framework.SL:
                 return (
-                    metrics.metrics_collector.get_objectives_for_sl("PRED"),
+                    metrics.metrics_collector.get_objectives_for_sl(self.application),
                     metrics.metrics_collector.get_critical_metrics_for_sl(),
                 )
             raise Exception("No valid Framework is given")
@@ -108,7 +106,7 @@ class EvaluationMonitor:
             self.handle_switch(decision)
             return True
         else:
-            database.database_access.store_decision_in_db(datetime.now(),self.running_framework)
+            #database.database_access.store_decision_in_db(datetime.now(),self.running_framework)
             return False
 
     # FIXME
