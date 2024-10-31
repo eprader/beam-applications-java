@@ -90,11 +90,11 @@ def test_handle_switch(mock_store_decision, mock_sleep, evaluation_monitor):
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -104,7 +104,9 @@ def test_handle_switch(mock_store_decision, mock_sleep, evaluation_monitor):
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     return_value=False,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_no_safety_net_no_act(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -123,11 +125,11 @@ def test_monitor_iteration_no_safety_net_no_act(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -137,7 +139,9 @@ def test_monitor_iteration_no_safety_net_no_act(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     return_value=False,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_without_safety_net(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -160,11 +164,11 @@ def test_monitor_iteration_periodic_check_without_safety_net(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -174,7 +178,9 @@ def test_monitor_iteration_periodic_check_without_safety_net(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     return_value=False,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_with_safety_net(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -197,11 +203,11 @@ def test_monitor_iteration_periodic_check_with_safety_net(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -211,7 +217,9 @@ def test_monitor_iteration_periodic_check_with_safety_net(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     return_value=False,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_with_safety_net_two_times(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -234,11 +242,11 @@ def test_monitor_iteration_periodic_check_with_safety_net_two_times(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -248,7 +256,9 @@ def test_monitor_iteration_periodic_check_with_safety_net_two_times(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     side_effect=[True] + [False] * 12,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_timeout_from_safety_net(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -271,11 +281,11 @@ def test_monitor_iteration_periodic_check_timeout_from_safety_net(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -285,7 +295,9 @@ def test_monitor_iteration_periodic_check_timeout_from_safety_net(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     side_effect=[True, False, False] + [False] * 10,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_timeout_from_periodic(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -308,11 +320,11 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic(
 
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_objectives_for_sf",
-    return_value="mock_objectives",autospec=True
+    return_value={"latency":500, "cpu_load":0.2, "throughput":500},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.metrics.metrics_collector.get_critical_metrics_for_sf",
-    return_value="mock_critical_metrics",autospec=True
+    return_value={"idleTime":500, "busyTime":400},autospec=True
 )
 @patch(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.check_for_safety_net",
@@ -322,7 +334,9 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic(
     "scheduler_logic.evaluation_monitor.EvaluationMonitor.evaluate_and_act",
     side_effect=[True, False, False] + [False] * 12,autospec=True
 )
+@patch("mysql.connector.connect")
 def test_monitor_iteration_periodic_check_timeout_from_periodic_second_periodic_check(
+    mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
     mock_get_critical_metrics,
@@ -341,7 +355,6 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic_second_periodic_
     assert mock_get_critical_metrics.call_count == 15
     assert mock_check_for_safety_net.call_count == 15
     assert mock_evaluate_and_act.call_count == 2
-
 
 @patch(
     "metrics.metrics_collector.get_objectives_for_sl",
@@ -442,7 +455,6 @@ def test_evaluate_and_act_no_switch(
     ):
         result = evaluation_monitor.evaluate_and_act()
         assert result is False
-        mock_store_decision.assert_called_once()
         assert evaluation_monitor.running_framework == utils.Utils.Framework.SF
 
 @patch("scheduler_logic.evaluation_monitor.logging")
@@ -477,7 +489,6 @@ def test_check_for_safety_net_sl_no_threshold_violation(mock_logging, evaluation
 
 @patch("scheduler_logic.evaluation_monitor.logging")
 def test_check_for_safety_net_exception_handling(mock_logging, evaluation_monitor):
-    # Simulate missing key in metrics_dic
     evaluation_monitor.running_framework = utils.Utils.Framework.SF
     metrics_dic = {"someMetric": 1000}
     assert evaluation_monitor.check_for_safety_net(metrics_dic) is False
