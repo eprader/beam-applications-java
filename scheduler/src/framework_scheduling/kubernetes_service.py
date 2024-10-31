@@ -4,15 +4,15 @@ import logging
 import time
 import requests
 import utils.Utils
+import metrics.metrics_collector
 
 
 def delete_all_jobs_from_serverful_framework():
-    list_of_running_jobs = get_jobid_of_running_job(
-        "flink-session-cluster-rest"
-    )
+    list_of_running_jobs = get_jobid_of_running_job("flink-session-cluster-rest")
     for job in list_of_running_jobs:
         stop_flink_job("flink-session-cluster-rest", job)
         logging.info(f"Deleted job {job}")
+
 
 def is_flink_deployment_ready(
     k8s_custom_objects_api, flink_deployment_name, namespace="default"
@@ -33,6 +33,7 @@ def is_flink_deployment_ready(
 
     return False
 
+
 def wait_for_flink_deployment(
     k8s_apps_v1,
     deployment_name,
@@ -48,6 +49,7 @@ def wait_for_flink_deployment(
         time.sleep(interval)
     logging.error(f"Timeout reached. Deployment '{deployment_name} not ready.")
     return False
+
 
 def start_flink_deployment(path_manifest):
     logging.info("Starting flink-session-cluster")
@@ -84,6 +86,7 @@ def start_flink_deployment(path_manifest):
     else:
         logging.error("Deployment name not found in manifest.")
 
+
 def terminate_flink_deployment(manifest_docs):
     config.load_incluster_config()
     k8s_custom_objects_api = client.CustomObjectsApi()
@@ -103,9 +106,8 @@ def terminate_flink_deployment(manifest_docs):
             )
             logging.info(f"FlinkDeployment '{name}' deleted: {resp}")
 
-def submit_flink_job(
-    job_jar_path, job_manager_host, database_url, experiment_run_id
-):
+
+def submit_flink_job(job_jar_path, job_manager_host, database_url, experiment_run_id):
     url = f"http://{job_manager_host}:8081/jars/upload"
 
     with open(job_jar_path, "rb") as jar_file:
@@ -132,6 +134,7 @@ def submit_flink_job(
     """
     logging.info(f"Job submitted successfully: {response.json()}")
 
+
 def get_jobid_of_running_job(job_manager_host):
     submit_url = f"http://{job_manager_host}:8081/jobs"
     response = requests.get(submit_url)
@@ -147,6 +150,7 @@ def get_jobid_of_running_job(job_manager_host):
         logging.error(f"Failed to fetch jobs. Status code: {response.status_code}")
         return []
 
+
 def stop_flink_job(job_manager_host, job_id):
     url = f"http://{job_manager_host}:8081/jobs/{job_id}/yarn-cancel"
 
@@ -161,6 +165,7 @@ def stop_flink_job(job_manager_host, job_id):
             logging.error(f"Response: {response.text}")
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred: {e}")
+
 
 def start_deployment_and_service(path_manifest, is_statefun_starter=False):
     logging.info("Starting deployment and service")
@@ -216,6 +221,7 @@ def start_deployment_and_service(path_manifest, is_statefun_starter=False):
     else:
         logging.error("Deployment or Service name not found in manifest.")
 
+
 def wait_for_deployment_and_service(
     k8s_apps_v1,
     k8s_core_v1,
@@ -240,6 +246,7 @@ def wait_for_deployment_and_service(
     )
     return False
 
+
 def wait_for_deployment(
     k8s_apps_v1,
     deployment_name,
@@ -256,11 +263,13 @@ def wait_for_deployment(
     logging.error(f"Timeout reached. Deployment '{deployment_name} not ready.")
     return False
 
+
 def is_deployment_ready(k8s_apps_v1, deployment_name, namespace="statefun"):
     deployment = k8s_apps_v1.read_namespaced_deployment(
         name=deployment_name, namespace=namespace
     )
     return deployment.status.ready_replicas == deployment.spec.replicas
+
 
 def is_service_ready(k8s_core_v1, service_name, namespace="statefun"):
     endpoints = k8s_core_v1.read_namespaced_endpoints(
@@ -268,57 +277,57 @@ def is_service_ready(k8s_core_v1, service_name, namespace="statefun"):
     )
     return len(endpoints.subsets) > 0
 
+
 def create_minio():
     manifest = utils.Utils.read_manifest("/app/minio.yaml")
     start_deployment_and_service(manifest)
 
+
 def create_statefun_environment():
     # Note this is a ConfigMap
     manifest_module = utils.Utils.read_manifest("/app/00-module.yaml")
-    manifest_runtime = utils.Utils.read_manifest(
-        "/app/01-statefun-runtime.yaml"
-    )
+    manifest_runtime = utils.Utils.read_manifest("/app/01-statefun-runtime.yaml")
     start_deployment_and_service(manifest_module)
     start_deployment_and_service(manifest_runtime)
 
+
 def create_statefun_starter(mongodb, dataset, application):
-    # FIXME for remote running
     manifest = utils.Utils.read_manifest_statefun_starter(
-        "/app/statefunStarter-manifest.yaml", mongodb, dataset, application, True
+        "/app/statefunStarter-manifest.yaml", mongodb, dataset, application, False
     )
     start_deployment_and_service(manifest, True)
+
 
 def delete_minio():
     manifest = utils.Utils.read_manifest("/app/minio.yaml")
     terminate_deployment_and_service(manifest)
 
+
 def delete_statefun_environment():
-    manifest_module =utils.Utils.read_manifest("/app/00-module.yaml")
-    manifest_runtime = utils.Utils.read_manifest(
-        "/app/01-statefun-runtime.yaml"
-    )
+    manifest_module = utils.Utils.read_manifest("/app/00-module.yaml")
+    manifest_runtime = utils.Utils.read_manifest("/app/01-statefun-runtime.yaml")
     terminate_deployment_and_service(manifest_module)
     terminate_deployment_and_service(manifest_runtime)
 
+
 def delete_statefun_starter():
-    manifest = utils.Utils.read_manifest(
-        "/app/statefunStarter-manifest.yaml"
-    )
+    manifest = utils.Utils.read_manifest("/app/statefunStarter-manifest.yaml")
     terminate_deployment_and_service(manifest)
+
 
 def terminate_serverless_framework():
     delete_statefun_starter()
     delete_statefun_environment()
     delete_minio()
 
+
 def create_serverless_framework(mongodb, dataset, application):
     create_minio()
     create_statefun_environment()
     create_statefun_starter(mongodb, dataset, application)
 
-def create_serverful_framework(
-    dataset, path_manifest, mongodb_address, application
-):
+
+def create_serverful_framework(dataset, path_manifest, mongodb_address, application):
     start_flink_deployment(path_manifest)
     submit_flink_job(
         "/app/FlinkJob.jar",
@@ -327,9 +336,11 @@ def create_serverful_framework(
         dataset + "-120",
     )
 
+
 def terminate_serverful_framework(manifest_docs):
     delete_all_jobs_from_serverful_framework()
     terminate_flink_deployment(manifest_docs)
+
 
 def terminate_deployment_and_service(manifest_docs):
     config.load_incluster_config()
@@ -355,6 +366,26 @@ def terminate_deployment_and_service(manifest_docs):
             )
             logging.info(f"ConfigMap '{name}' deleted.")
 
-#FIXME
-def make_change(framework_used:utils.Utils.Framework):
-    pass
+
+def make_change(
+    framework_used: utils.Utils.Framework,
+    number_messages_sent: int,
+    application: str,
+    manifest_docs,
+    mongodb_address,
+    dataset,
+):
+    while True:
+        if 2 * number_messages_sent >= metrics.metrics_collector.get_numRecordsOut(
+            framework_used, application
+        ):
+            break
+        time.sleep(20)
+
+    if framework_used == utils.Utils.Framework.SL:
+        terminate_serverless_framework()
+        create_serverful_framework(dataset, manifest_docs, mongodb_address, application)
+
+    if framework_used == utils.Utils.Framework.SF:
+        terminate_serverful_framework(manifest_docs)
+        create_serverless_framework(mongodb_address, dataset, application)

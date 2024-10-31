@@ -48,16 +48,28 @@ class FrameworkScheduler:
         self.main_loop_setup(manifest_docs, application, dataset, mongodb)
         if application == "TRAIN":
             serverful_topic = "train-source"
-        number_sent_messages_serverful = 0
-        number_sent_messages_serverless = 0
+        elif application == "PRED":
+            serverful_topic = "senml-cleaned"
+        number_messages_sent = 0
         while True:
-            self.main_loop_logic(
+            number_messages_sent = self.main_loop_logic(
                 serverful_topic,
-                number_sent_messages_serverful,
-                number_sent_messages_serverless,
+                number_messages_sent,
             )
             if self.evaluation_event.is_set():
-                framework_scheduling.kubernetes_service.make_change(self.framework_used)
+                framework_scheduling.kubernetes_service.make_change(
+                    self.framework_used,
+                    number_messages_sent,
+                    application,
+                    manifest_docs,
+                    mongodb,
+                    dataset,
+                )
+                self.framework_used = utils.Utils.get_opposite_framework(
+                    self.framework_used
+                )
+                number_messages_sent = 0
+                self.evaluation_event.clear()
 
     def main_loop_setup(self, manifest_docs, application, dataset, mongodb):
         try:
@@ -74,15 +86,9 @@ class FrameworkScheduler:
             logging.error("Error, when setting up main loop", e)
             return e
 
-    #FIXME: Check if from the KafkaProducer a byte or a string arrives as messages
-    #this is important for the value in the producer
-    def main_loop_logic(
-        self,
-        serverful_topic,
-        number_sent_messages_serverful,
-        number_sent_messages_serverless,
-    ):
-        serverful_topic = "senml-cleaned"
+    # FIXME: Check if from the KafkaProducer a byte or a string arrives as messages
+    # this is important for the value in the producer
+    def main_loop_logic(self, serverful_topic, number_messages_sent):
         message = self.consumer.poll(timeout_ms=5000)
         if message:
             for tp, messages in message.items():
@@ -93,11 +99,9 @@ class FrameworkScheduler:
                             key=struct.pack(">Q", int(time.time() * 1000)),
                             value=msg.decode().encode("utf-8"),
                         )
-                        number_sent_messages_serverful = (
-                            number_sent_messages_serverful + 1
-                        )
+                        number_messages_sent = number_messages_sent + 1
                         logging.info(
-                            f"Number of sent messages serverful: {number_sent_messages_serverful}"
+                            f"Number of sent messages serverful: {number_messages_sent}"
                         )
                     else:
                         self.producer.send(
@@ -105,51 +109,9 @@ class FrameworkScheduler:
                             key=str(int(time.time() * 1000)).encode("utf-8"),
                             value=msg.decode(),
                         )
-                        number_sent_messages_serverless = (
-                            number_sent_messages_serverless + 1
-                        )
+                        number_messages_sent = number_messages_sent + 1
+
                         logging.info(
-                            f"Number of sent messages serverless: {number_sent_messages_serverless}"
+                            f"Number of sent messages serverless: {number_messages_sent}"
                         )
-
-    def debug_run(self, manifest_docs, application, dataset, mongodb):
-        is_deployed = False
-        number_sent_messages = 0
-        serverful_topic = "senml-cleaned"
-        if application == "TRAIN":
-            serverful_topic = "train-source"
-
-        while True:
-            if self.framework_used == utils.Utils.Framework.SF:
-                if not is_deployed:
-                    framework_scheduling.kubernetes_service.create_serverful_framework(
-                        dataset, manifest_docs, mongodb, application
-                    )
-                    is_deployed = True
-
-                test_string = '[{"u":"string","n":"source","vs":"ci4lrerertvs6496"},{"v":"64.57491754110376","u":"lon","n":"longitude"},{"v":"171.83173176418288","u":"lat","n":"latitude"},{"v":"67.7","u":"far","n":"temperature"},{"v":"76.6","u":"per","n":"humidity"},{"v":"1351","u":"per","n":"light"},{"v":"929.74","u":"per","n":"dust"},{"v":"26","u":"per","n":"airquality_raw"}]'
-                self.producer.send(
-                    serverful_topic,
-                    key=struct.pack(">Q", int(time.time() * 1000)),
-                    value=test_string.encode("utf-8"),
-                )
-                logging.info("send message for serverful")
-            else:
-                if not is_deployed:
-                    framework_scheduling.kubernetes_service.create_serverless_framework(
-                        mongodb, dataset, application
-                    )
-                    is_deployed = True
-
-                test_string = '[{"u":"string","n":"source","vs":"ci4lrerertvs6496"},{"v":"64.57491754110376","u":"lon","n":"longitude"},{"v":"171.83173176418288","u":"lat","n":"latitude"},{"v":"67.7","u":"far","n":"temperature"},{"v":"76.6","u":"per","n":"humidity"},{"v":"1351","u":"per","n":"light"},{"v":"929.74","u":"per","n":"dust"},{"v":"26","u":"per","n":"airquality_raw"}]'
-                self.producer.send(
-                    "statefun-starter-input",
-                    key=str(int(time.time() * 1000)).encode("utf-8"),
-                    value=test_string,
-                )
-                logging.info("send message for serverless")
-            time.sleep(60)
-
-
-if __name__ == "__main__":
-    pass
+        return
