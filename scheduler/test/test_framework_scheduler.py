@@ -11,23 +11,23 @@ import time
 @pytest.fixture
 def mock_framework_scheduler():
     with patch(
-        "framework_scheduling.framework_scheduler.KafkaConsumer",autospec=True
+        "framework_scheduling.framework_scheduler.KafkaConsumer", autospec=True
     ) as MockConsumer, patch(
-        "framework_scheduling.framework_scheduler.KafkaProducer",autospec=True
+        "framework_scheduling.framework_scheduler.KafkaProducer", autospec=True
     ) as MockProducer, patch(
         "framework_scheduling.kubernetes_service.terminate_serverful_framework",
-        autospec=True
+        autospec=True,
     ) as mock_terminate_serverful, patch(
         "framework_scheduling.kubernetes_service.terminate_serverless_framework",
-       autospec=True
+        autospec=True,
     ) as mock_terminate_serverless, patch(
         "framework_scheduling.kubernetes_service.create_serverful_framework",
-       autospec=True
+        autospec=True,
     ) as mock_create_serverful, patch(
         "framework_scheduling.kubernetes_service.create_serverless_framework",
-      autospec=True
+        autospec=True,
     ) as mock_create_serverless, patch(
-        "utils.Utils.read_manifest",autospec=True
+        "utils.Utils.read_manifest", autospec=True
     ) as mock_read_manifest, patch(
         "framework_scheduling.kubernetes_service.make_change", autospec=True
     ) as mock_make_change:
@@ -172,12 +172,10 @@ def test_main_loop_logic_serverful(mock_framework_scheduler):
         mock_read_manifest,
     ) = mock_framework_scheduler
     serverful_topic = "senml-cleaned"
-    number_sent_messages_serverful = 0
-    number_sent_messages_serverless = 0
-    scheduler.main_loop_logic(
-        serverful_topic, number_sent_messages_serverful, number_sent_messages_serverless
-    )
+    number_sent_messages = 0
+    scheduler.main_loop_logic(serverful_topic, number_sent_messages)
     scheduler.producer.send.assert_called_once()
+
 
 def test_main_loop_logic_serverless(mock_framework_scheduler):
     (
@@ -192,10 +190,7 @@ def test_main_loop_logic_serverless(mock_framework_scheduler):
         mock_read_manifest,
     ) = mock_framework_scheduler
     serverful_topic = "senml-cleaned"
-    number_sent_messages_serverful = 0
-    number_sent_messages_serverless = 0
+    number_sent_messages = 0
     scheduler.framework_used = utils.Utils.Framework.SL
-    scheduler.main_loop_logic(
-        serverful_topic, number_sent_messages_serverful, number_sent_messages_serverless
-    )
+    scheduler.main_loop_logic(serverful_topic, number_sent_messages)
     scheduler.producer.send.assert_called_once()
