@@ -7,6 +7,7 @@ import scheduler_logic.evaluation_monitor
 import threading
 import scheduler_logic.scheduler_logic
 import utils.Utils
+import database.database_access
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -38,26 +39,30 @@ if __name__ == "__main__":
         path_manifest_flink_session_cluster = (
             "/app/flink-session-cluster-deployment.yaml"
         )
-        manifest_docs_flink_session_cluster = (
-           utils.Utils.read_manifest(
-                path_manifest_flink_session_cluster
-            )
+        manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
+            path_manifest_flink_session_cluster
         )
         framework_used = utils.Utils.Framework.SF
         evaluation_event = threading.Event()
-        evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(framework_used,evaluation_event, application, dataset)
-        framework_scheduler = FrameworkScheduler(
-        framework_used, evaluation_event
-            )
+        evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(
+            framework_used, evaluation_event, application, dataset
+        )
+        framework_scheduler = FrameworkScheduler(framework_used, evaluation_event)
         scheduler_thread = threading.Thread(
             target=framework_scheduler.main_run,
-            args=(manifest_docs_flink_session_cluster, application, dataset, mongodb_address),
-            name="FrameworkSchedulerThread"
+            args=(
+                manifest_docs_flink_session_cluster,
+                application,
+                dataset,
+                mongodb_address,
+            ),
+            name="FrameworkSchedulerThread",
         )
         monitor_thread = threading.Thread(
-            target=evaluation_monitor.start_monitoring,
-            name="MetricsMonitorThread"
+            target=evaluation_monitor.start_monitoring, name="MetricsMonitorThread"
         )
+
+        database.database_access.init_database()
 
         scheduler_thread.start()
         monitor_thread.start()
