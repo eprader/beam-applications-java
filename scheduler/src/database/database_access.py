@@ -36,7 +36,6 @@ def create_metrics_table(cursor):
 
 def create_framework_start_times_table(cursor):
     start_times_table_name = "framework_start_times"
-    """Create a table for storing framework start times, if it doesn't exist."""
     create_start_times_table_query = f"""
     CREATE TABLE IF NOT EXISTS {start_times_table_name} (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,7 +69,7 @@ def insert_scheduler_metrics(timestamp: datetime, metrics_dict: dict, framework:
     table_name = "scheduler_metrics"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
-        cursor = conn.cursor()
+        my_cursor = conn.cursor()
 
         insert_query = f"""
         INSERT INTO {table_name} (timestamp, latency, cpu_load, throughput, framework)
@@ -84,13 +83,13 @@ def insert_scheduler_metrics(timestamp: datetime, metrics_dict: dict, framework:
             framework,
         )
 
-        cursor.execute(insert_query, data)
+        my_cursor.execute(insert_query, data)
         conn.commit()
     except Error as e:
         logging.error(f"Error inserting data: {e}")
 
     finally:
-        cursor.close()
+        my_cursor.close()
         conn.close()
 
 
