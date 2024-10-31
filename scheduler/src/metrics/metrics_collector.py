@@ -1,13 +1,8 @@
 import logging
 import requests
 import json
+import utils.Utils
 from kafka import KafkaConsumer
-
-
-kafka_consumer = KafkaConsumer(
-    "pred-publish",
-    bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
-)
 
 
 def read_metric_from_prometheus(metric_name):
@@ -24,8 +19,23 @@ def read_metric_from_prometheus(metric_name):
         return list()
 
 
-# Return as dict {"metric": value}
-def get_critical_metrics_for_sf():
+def read_metric_from_prometheus_single_metric(metric_name):
+    prometheus_url = "http://prometheus-operated.default.svc.cluster.local:9090"
+    try:
+        response = requests.get(
+            f"{prometheus_url}/api/v1/query",
+            params={"query": metric_name},
+        )
+        data = response.json()
+        value = data["data"]["result"][0]["value"][1]
+        return int(value)
+    except Exception as e:
+        logging.error(f"Error, when reading from prometheus: {e}")
+        return None
+
+
+# Return as {"idleTime":, "busyTime":}
+def get_critical_metrics_for_sf(application: str):
     critical_sf_task_operators = [
         "flink_taskmanager_job_task_idleTimeMsPerSecond",
         "flink_taskmanager_job_task_busyTimeMsPerSecond",
@@ -35,11 +45,14 @@ def get_critical_metrics_for_sf():
     for metric in critical_sf_task_operators:
         values = read_metric_from_prometheus(metric)
         filtered_list = filter_critical_values_sf(
-            values.get("data", {}).get("result", [])
+            values.get("data", {}).get("result", []), application
         )
         mean = calculate_mean_of_dicts(filtered_list)
         if mean != None:
-            mean_metrics[metric] = mean
+            if "idleTime" in metric:
+                mean_metrics["idleTime"] = mean
+            elif "busyTime" in metric:
+                mean_metrics["busyTime"] = mean
             logging.info(f"Mean value for {metric}: {mean}")
         else:
             mean_metrics[metric] = None
@@ -48,10 +61,11 @@ def get_critical_metrics_for_sf():
     return mean_metrics
 
 
-# FIXME: Filter only the relevant operators
-def filter_critical_values_sf(response):
+def filter_critical_values_sf(response, application: str):
     filtered_metrics = [
-        result for result in response if result["metric"].get("task_name") != "feedback"
+        result
+        for result in response
+        if check_operator_name_sf(result["metric"].get("task_name"), application)
     ]
     extracted_data = [
         {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
@@ -61,7 +75,35 @@ def filter_critical_values_sf(response):
     return extracted_data
 
 
-# Return as dict {"metric": value}
+def check_operator_name_sf(name, application: str):
+    if application == "PRED":
+        operator_list = [
+            "AverageBeam",
+            "DecisionTreeBeam2",
+            "ErrorEstimateBeam1",
+            "ErrorEstimateBeam2",
+            "LinearRegressionBeam1",
+            "ParsePredictBeam",
+            "Sink",
+            "SourceBeam",
+        ]
+    elif application == "TRAIN":
+        operator_list = [
+            "AnnotateBeam",
+            "BlobWriteBeam",
+            "DecisionTreeBeam",
+            "LinearRegressionBeam",
+            "Sink",
+            "TableReadBeam",
+            "TimerSourceBeam",
+        ]
+    for operator in operator_list:
+        if operator in name:
+            return True
+    return False
+
+
+# Return as {"backPressuredTime":, "busyTime":}
 def get_critical_metrics_for_sl():
     critical_sl_task_operators = [
         "flink_taskmanager_job_task_backPressuredTimeMsPerSecond",
@@ -76,7 +118,10 @@ def get_critical_metrics_for_sl():
         )
         mean = calculate_mean_of_dicts(filtered_list)
         if mean != None:
-            mean_metrics[metric] = mean
+            if "backPressureTime" in metric:
+                mean_metrics["backPressureTime"] = mean
+            elif "busyTime" in metric:
+                mean_metrics["busyTime"] = mean
             logging.info(f"Mean value for {metric}: {mean}")
         else:
             mean_metrics[metric] = None
@@ -110,8 +155,8 @@ def calculate_mean_of_dicts(filtered_response):
         return None
 
 
-# Return as dict {"metric": value}
-def get_objectives_for_sf():
+# Return as {"latency":500, "cpu_load":0.2, "throughput":500}
+def get_objectives_for_sf(application):
     objectives_sf = [
         "flink_taskmanager_job_task_numRecordsOutPerSecond",
         "flink_taskmanager_job_task_operator_at_ac_uibk_dps_streamprocessingapplications_beam_Sink_custom_latency",
@@ -124,9 +169,14 @@ def get_objectives_for_sf():
         if metric != "flink_taskmanager_job_task_numRecordsOutPerSecond":
             numeric_value = filter_objectives_sl(values)
         else:
-            numeric_value = filter_num_records_out_sf(values)
+            numeric_value = filter_num_records_out_sf(values, application)
         if numeric_value != None:
-            objectives[metric] = numeric_value
+            if "numRecordsOut" in metric:
+                objectives["throughput"] = numeric_value
+            elif "CPU_Load" in metric:
+                objectives["cpu_load"] = numeric_value
+            elif "custom_latency" in metric:
+                objectives["latency"] = numeric_value
             logging.info(f"Value for {metric}: {numeric_value}")
         else:
             objectives[metric] = None
@@ -135,12 +185,22 @@ def get_objectives_for_sf():
     return objectives
 
 
-# FIXME: Decide based on application, which value to take
-def filter_num_records_out_sf(values):
-    pass
+def filter_num_records_out_sf(response, application: str):
+    filtered_metrics = [
+        result
+        for result in response
+        if "flink_taskmanager_job_task_numRecordsOutPerSecond_WriteStringSink_Write_SenML_strings_to_Kafka_KafkaIO_Write_Kafka_ProducerRecord_Map_ParMultiDo_Anonymous"
+        in result["metric"].get("task_name")
+    ]
+    extracted_data = [
+        {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
+        for result in filtered_metrics
+    ]
+
+    return extracted_data
 
 
-# Return as dict {"metric": value}
+# Return as {"latency":500, "cpu_load":0.2, "throughput":500}
 def get_objectives_for_sl(application):
     objectives_sl = list()
     if application == "PRED":
@@ -158,12 +218,16 @@ def get_objectives_for_sl(application):
     for metric in objectives_sl:
         if metric == "latency":
             objectives[metric] = float(get_latest_latency_value_sl())
+            continue
 
         values = read_metric_from_prometheus(metric)
         numeric_value = filter_objectives_sl(values)
 
         if numeric_value != None:
-            objectives[metric] = numeric_value
+            if "CPU_Load" in metric:
+                objectives["CPU_Load"] = numeric_value
+            elif "outLocalRate" in metric:
+                objectives["throughput"] = numeric_value
             logging.info(f"Value for {metric}: {numeric_value}")
         else:
             objectives[metric] = None
@@ -174,9 +238,12 @@ def get_objectives_for_sl(application):
 
 def get_latest_latency_value_sl():
     try:
+        kafka_consumer = KafkaConsumer(
+            "pred-publish",
+            bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+        )
         message = next(kafka_consumer.poll(timeout_ms=1000).values())
         if message:
-            # Deserialize the message if it's in JSON format
             message_value = json.loads(message[0].value.decode("utf-8"))
             logging.info(f"Latest message from 'pred-publish': {message_value}")
             return message_value
@@ -202,3 +269,22 @@ def filter_objectives_sl(response):
     except (IndexError, ValueError, TypeError) as e:
         logging.error(f"Error extracting metric value: {e}")
         return None
+
+def get_numRecordsOut(framework: utils.Utils.Framework, application: str):
+    if framework == utils.Utils.Framework.SL:
+        if application == "TRAIN":
+            metric_name = "flink_taskmanager_job_task_operator_functions_pred_mqttPublishTrain_outEgress"
+        elif application == "PRED":
+            metric_name = "flink_taskmanager_job_task_operator_functions_pred_mqttPublish_outEgress"
+        return read_metric_from_prometheus_single_metric(metric_name)
+    elif framework == utils.Utils.Framework.SF:
+        metric_name = "flink_taskmanager_job_task_numRecordsIn"
+        response = read_metric_from_prometheus(metric_name)
+        filtered_metrics = [
+            result for result in response if "Sink" in result["metric"].get("task_name")
+        ]
+    extracted_data = [
+        {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
+        for result in filtered_metrics
+    ]
+    return extracted_data[0]
