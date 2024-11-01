@@ -7,6 +7,7 @@ import logging
 import utils.Utils
 from datetime import datetime
 
+
 class EvaluationMonitor:
     def __init__(
         self,
@@ -42,7 +43,9 @@ class EvaluationMonitor:
         timeout_counter = self.timeout_counter
         periodic_counter = self.periodic_counter
         metrics = self.collect_metrics()
-        database.database_access.insert_scheduler_metrics(datetime.now(),metrics[0], self.running_framework.name)
+        database.database_access.insert_scheduler_metrics(
+            datetime.now(), metrics[0], self.running_framework.name
+        )
         if self.check_for_safety_net(metrics[1]) and timeout_counter == 0:
             if self.evaluate_and_act():
                 timeout_counter = self.timeout_duration_sec / self.sleep_interval
@@ -86,7 +89,9 @@ class EvaluationMonitor:
             if self.running_framework is utils.Utils.Framework.SF:
                 return (
                     metrics.metrics_collector.get_objectives_for_sf(self.application),
-                    metrics.metrics_collector.get_critical_metrics_for_sf(self.application),
+                    metrics.metrics_collector.get_critical_metrics_for_sf(
+                        self.application
+                    ),
                 )
             elif self.running_framework is utils.Utils.Framework.SL:
                 return (
@@ -106,13 +111,12 @@ class EvaluationMonitor:
             self.handle_switch(decision)
             return True
         else:
-            #database.database_access.store_decision_in_db(datetime.now(),self.running_framework)
+            # database.database_access.store_decision_in_db(datetime.now(),self.running_framework)
             return False
 
-    # FIXME
     def handle_switch(self, decision: utils.Utils.Framework):
         self.evaluation_event.set()
-        database.database_access.store_decision_in_db(datetime.now(),decision)
+        database.database_access.store_decision_in_db(datetime.now(), decision)
         while self.evaluation_event.is_set():
             time.sleep(30)
             logging.info("Waiting for event to unset")
