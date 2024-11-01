@@ -2,11 +2,12 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY . /app
-
+COPY src/ /app/src/
+COPY config_frameworks /app/config_frameworks/
+COPY requirements.txt /app/
 
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "scheduler.py"]
+CMD ["python", "/app/src/main.py"]
 #CMD ["python","test_creating_kubernetes.py"]
