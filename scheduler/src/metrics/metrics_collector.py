@@ -118,8 +118,8 @@ def get_critical_metrics_for_sl():
         )
         mean = calculate_mean_of_dicts(filtered_list)
         if mean != None:
-            if "backPressureTime" in metric:
-                mean_metrics["backPressureTime"] = mean
+            if "backPressuredTime" in metric:
+                mean_metrics["backPressuredTime"] = mean
             elif "busyTime" in metric:
                 mean_metrics["busyTime"] = mean
             logging.info(f"Mean value for {metric}: {mean}")
