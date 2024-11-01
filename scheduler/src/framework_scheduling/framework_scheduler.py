@@ -23,29 +23,32 @@ class FrameworkScheduler:
             key_serializer=lambda k: k.encode("utf-8") if isinstance(k, str) else k,
             value_serializer=lambda v: v.encode("utf-8") if isinstance(v, str) else v,
         )
+        self.framework_is_running = False
 
     def cleanup(self):
         try:
             self.consumer.close()
             self.producer.close()
-            if self.framework_used == utils.Utils.Framework.SF:
-                path_manifest_flink_session_cluster = (
-                    "/app/flink-session-cluster-deployment.yaml"
-                )
-                manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
-                    path_manifest_flink_session_cluster
-                )
-                framework_scheduling.kubernetes_service.terminate_serverful_framework(
-                    manifest_docs_flink_session_cluster
-                )
-            else:
-                framework_scheduling.kubernetes_service.terminate_serverless_framework()
+            if self.framework_is_running:
+                if self.framework_used == utils.Utils.Framework.SF:
+                    path_manifest_flink_session_cluster = (
+                        "/app/config_frameworks/flink-session-cluster-deployment.yaml"
+                    )
+                    manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
+                        path_manifest_flink_session_cluster
+                    )
+                    framework_scheduling.kubernetes_service.terminate_serverful_framework(
+                        manifest_docs_flink_session_cluster
+                    )
+                else:
+                    framework_scheduling.kubernetes_service.terminate_serverless_framework()
         except Exception as e:
             logging.error(f"Cleanup error: {e}")
             raise e
 
     def main_run(self, manifest_docs, application, dataset, mongodb):
         self.main_loop_setup(manifest_docs, application, dataset, mongodb)
+        self.framework_is_running = True
         if application == "TRAIN":
             serverful_topic = "train-source"
         elif application == "PRED":
@@ -57,6 +60,7 @@ class FrameworkScheduler:
                 number_messages_sent,
             )
             if self.evaluation_event.is_set():
+                self.framework_is_running = False
                 framework_scheduling.kubernetes_service.make_change(
                     self.framework_used,
                     number_messages_sent,
@@ -69,6 +73,7 @@ class FrameworkScheduler:
                     self.framework_used
                 )
                 number_messages_sent = 0
+                self.framework_is_running = True
                 self.evaluation_event.clear()
 
     def main_loop_setup(self, manifest_docs, application, dataset, mongodb):
