@@ -20,13 +20,20 @@ spec:
         #image: jungerindy/scheduler:latest
         image: scheduler-image:latest
         imagePullPolicy: IfNotPresent
+        #imagePullPolicy: Always
         env:
         - name: APPLICATION
           value: "PRED"
         - name: MONGODB 
           value: "mongodb://adminuser:password123@192.168.58.2:32000/"
         - name: DATASET
-          value: "SYS"
+          value: "TAXI"
+        - name: MYSQL_HOST
+          value: "mysql"
+        - name: MYSQL_ROOT_PASSWORD
+          value: "password"
+        - name: MYSQL_DATABASE
+          value: "testdb"  
         ports:
         - containerPort: 9093
         resources:
