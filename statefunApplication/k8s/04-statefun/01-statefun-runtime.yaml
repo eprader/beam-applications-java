@@ -128,6 +128,7 @@ spec:
         - name: master
           image: jungerindy/3.4-snapshot
           imagePullPolicy: Always
+          #imagePullPolicy: IfNotPresent
           env:
             - name: ROLE
               value: master
