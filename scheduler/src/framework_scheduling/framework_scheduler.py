@@ -11,9 +11,15 @@ import utils.Utils
 
 
 class FrameworkScheduler:
-    def __init__(self, framework: utils.Utils.Framework, evaluation_event: Event):
+    def __init__(
+        self,
+        framework: utils.Utils.Framework,
+        evaluation_event: Event,
+        framework_running_event: Event,
+    ):
         self.framework_used = framework
         self.evaluation_event = evaluation_event
+        self.framework_running_event = framework_running_event
         self.consumer = KafkaConsumer(
             "scheduler-input",
             bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
@@ -49,6 +55,7 @@ class FrameworkScheduler:
     def main_run(self, manifest_docs, application, dataset, mongodb):
         self.main_loop_setup(manifest_docs, application, dataset, mongodb)
         self.framework_is_running = True
+        self.framework_running_event.set()
         if application == "TRAIN":
             serverful_topic = "train-source"
         elif application == "PRED":
