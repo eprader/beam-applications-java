@@ -46,6 +46,18 @@ def create_framework_start_times_table(cursor):
     cursor.execute(create_start_times_table_query)
     print(f"Table '{start_times_table_name}' checked/created.")
 
+def create_model_storage_table(cursor):
+    model_storage_table_name = "model_storage"
+    create_model_storage_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {model_storage_table_name} (
+        model_name VARCHAR(255) PRIMARY KEY,
+        model_data LONGBLOB NOT NULL
+    )
+    """
+    cursor.execute(create_model_storage_table_query)
+    logging.info(f"Table '{model_storage_table_name}' checked/created.")
+
+
 
 def init_database():
     try:
@@ -55,6 +67,7 @@ def init_database():
         conn.database = db_name
         create_metrics_table(cursor)
         create_framework_start_times_table(cursor)
+        create_model_storage_table(cursor)
         logging.info("Database and table initialized successfully.")
 
     except Error as e:
@@ -112,6 +125,46 @@ def store_decision_in_db(timestamp: datetime, decision: str):
     except Error as e:
         print(f"Error inserting framework start time: {e}")
 
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def store_model_in_database(model_name, model_binary):
+    table_name = "model_storage"
+
+    try:
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            f"REPLACE INTO {table_name} (model_name, model_data) VALUES (%s, %s)",
+            (model_name, model_binary),
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        logging.info("Model saved to MySQL successfully.")
+    except Exception as e:
+        logging.error("Error when saving binary to database")
+    finally:
+        cursor.close()
+        conn.close()
+
+def fetch_single_model(model_name):
+    try:
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor()
+        fetch_model_query = f"SELECT model_data FROM model_storage WHERE model_name = %s"
+        cursor.execute(fetch_model_query, (model_name,))
+        result = cursor.fetchone()
+        if result:
+            logging.info(f"Model '{model_name}' fetched successfully.")
+            return result[0]
+        else:
+            logging.error(f"Model '{model_name}' not found.")
+            return None
+    except Exception as e:
+        logging.error("Error when fetching load predictor model from database")
     finally:
         cursor.close()
         conn.close()
