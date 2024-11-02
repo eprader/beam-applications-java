@@ -44,17 +44,21 @@ if __name__ == "__main__":
         )
         framework_used = utils.Utils.Framework.SF
         evaluation_event = threading.Event()
+        framework_running_event = threading.Event()
         threshold_dict_sf = {"idleTime": 900, "busyTime": 100}
         threshold_dict_sl = {"busyTime": 800, "backPressuredTime": 800}
         evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(
             framework_used,
             evaluation_event,
+            framework_running_event,
             application,
             dataset,
             threshold_dict_sf,
             threshold_dict_sl,
         )
-        framework_scheduler = FrameworkScheduler(framework_used, evaluation_event)
+        framework_scheduler = FrameworkScheduler(
+            framework_used, evaluation_event, framework_running_event
+        )
         scheduler_thread = threading.Thread(
             target=framework_scheduler.main_run,
             args=(
@@ -68,7 +72,7 @@ if __name__ == "__main__":
         monitor_thread = threading.Thread(
             target=evaluation_monitor.start_monitoring, name="MetricsMonitorThread"
         )
-        
+
         database.database_access.init_database()
 
         scheduler_thread.start()
