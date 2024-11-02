@@ -329,8 +329,13 @@ def create_serverless_framework(mongodb, dataset, application):
 
 def create_serverful_framework(dataset, path_manifest, mongodb_address, application):
     start_flink_deployment(path_manifest)
+    basic_path = "/app/config_frameworks/"
+    if application == "PRED":
+        basic_path = basic_path + "pred/"
+    elif application == "TRAIN":
+        basic_path = basic_path + "train/"
     submit_flink_job(
-        "/app/FlinkJob.jar",
+        basic_path + "FlinkJob.jar",
         "flink-session-cluster-rest",
         mongodb_address,
         dataset + "-120",
