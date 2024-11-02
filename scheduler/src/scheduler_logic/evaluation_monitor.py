@@ -13,6 +13,7 @@ class EvaluationMonitor:
         self,
         running_framework: utils.Utils.Framework,
         evaluation_event: threading.Event,
+        framework_running_event: threading.Event,
         application: str,
         dataset: str,
         threshold_dict_sf: dict,
@@ -26,6 +27,7 @@ class EvaluationMonitor:
         self.dataset = dataset
         self.running_framework = running_framework
         self.evaluation_event = evaluation_event
+        self.framework_running_event = framework_running_event
         self.timeout_duration_sec = timeout_duration_min * 60
         self.sleep_interval = sleep_interval_seconds
         self.timeout_counter = 0
@@ -35,6 +37,8 @@ class EvaluationMonitor:
 
     def start_monitoring(self):
         periodic_checks = self.interval_seconds / self.sleep_interval
+        while not self.framework_running_event.is_set():
+            time.sleep(30)
         while True:
             self.monitor_iteration(periodic_checks)
             time.sleep(self.sleep_interval)
@@ -43,6 +47,9 @@ class EvaluationMonitor:
         timeout_counter = self.timeout_counter
         periodic_counter = self.periodic_counter
         metrics = self.collect_metrics()
+        if metrics[0] is None or metrics[1] is None:
+            logging.warning("Collect_metrics returned None value")
+            return
         database.database_access.insert_scheduler_metrics(
             datetime.now(), metrics[0], self.running_framework.name
         )
