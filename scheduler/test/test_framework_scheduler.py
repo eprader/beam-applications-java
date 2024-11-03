@@ -42,7 +42,8 @@ def mock_framework_scheduler():
 
         framework = utils.Utils.Framework.SF
         evaluation_event = Event()
-        scheduler = FrameworkScheduler(framework, evaluation_event)
+        framework_running = Event()
+        scheduler = FrameworkScheduler(framework, evaluation_event, framework_running)
         scheduler.consumer = mock_consumer_instance
         scheduler.producer = mock_producer_instance
 
@@ -77,6 +78,7 @@ def test_framework_scheduler_cleanup_SF(mock_framework_scheduler):
         mock_terminate_serverless,
         mock_read_manifest,
     ) = mock_framework_scheduler
+    scheduler.framework_is_running = True
     scheduler.framework_used = utils.Utils.Framework.SF
     scheduler.cleanup()
     scheduler.consumer.close.assert_called_once()
@@ -98,6 +100,7 @@ def test_framework_scheduler_cleanup_SL(mock_framework_scheduler):
         mock_terminate_serverless,
         mock_read_manifest,
     ) = mock_framework_scheduler
+    scheduler.framework_is_running = True
     scheduler.framework_used = utils.Utils.Framework.SL
     scheduler.cleanup()
     scheduler.consumer.close.assert_called_once()

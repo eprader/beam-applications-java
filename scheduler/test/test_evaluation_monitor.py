@@ -11,9 +11,11 @@ from scheduler_logic.evaluation_monitor import (
 @pytest.fixture
 def evaluation_monitor():
     event = threading.Event()
+    framework_running = threading.Event()
     return EvaluationMonitor(
         running_framework=utils.Utils.Framework.SF,
         evaluation_event=event,
+        framework_running_event=framework_running,
         application="TRAIN",
         dataset="FIT",
         threshold_dict_sf = {"idleTime": 990, "busyTime": 10},
