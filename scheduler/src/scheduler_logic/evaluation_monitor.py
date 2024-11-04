@@ -18,6 +18,7 @@ class EvaluationMonitor:
         dataset: str,
         threshold_dict_sf: dict,
         threshold_dict_sl: dict,
+        window_size_dtw:int,
         periodic_checking_min=1,
         timeout_duration_min=10,
         sleep_interval_seconds=30,
@@ -34,6 +35,7 @@ class EvaluationMonitor:
         self.periodic_counter = 0
         self.threshold_dict_sf = threshold_dict_sf
         self.threshold_dict_sl = threshold_dict_sl
+        self.window_size_dtw = window_size_dtw
 
     def start_monitoring(self):
         periodic_checks = self.interval_seconds / self.sleep_interval
@@ -50,7 +52,7 @@ class EvaluationMonitor:
         if metrics[0] is None or metrics[1] is None:
             logging.warning("Collect_metrics returned None value")
             return
-        database.database_access.insert_scheduler_metrics(
+        database.database_access.store_scheduler_metrics(
             datetime.now(), metrics[0], self.running_framework.name
         )
         if self.check_for_safety_net(metrics[1]) and timeout_counter == 0:
@@ -112,7 +114,8 @@ class EvaluationMonitor:
 
     def evaluate_and_act(self):
         decision = scheduler_logic.scheduler_logic.run_evaluation(
-            self.running_framework
+            self.running_framework,
+            self.window_size_dtw
         )
         if decision != self.running_framework:
             self.handle_switch(decision)
@@ -123,7 +126,7 @@ class EvaluationMonitor:
 
     def handle_switch(self, decision: utils.Utils.Framework):
         self.evaluation_event.set()
-        database.database_access.store_decision_in_db(datetime.now(), decision)
+        #database.database_access.store_decision_in_db(datetime.now(), decision)
         while self.evaluation_event.is_set():
             time.sleep(30)
             logging.info("Waiting for event to unset")

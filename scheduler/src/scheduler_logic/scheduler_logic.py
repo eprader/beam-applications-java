@@ -1,5 +1,9 @@
 import numpy as np
 import utils.Utils
+import timeseriesPredictor.LoadPredictor
+import database.database_access
+import datetime
+import database.database_access
 
 
 def calculate_utility_value(throughput, latency, cpu, weights):
@@ -34,12 +38,19 @@ def normalize_throughput(throughput):
 
 
 # FIXME
-def run_evaluation(current_framework: utils.Utils.Framework):
+#Implement this properly
+def run_evaluation(current_framework: utils.Utils.Framework, window_size:int):
     """
     Return either SL or SF
     Add latency penalty to not running framework, only one value
     """
-    return current_framework
+    predictor = timeseriesPredictor.LoadPredictor.LoadPredictor()
+    history = database.database_access.retrieve_input_rates_current_data()
+    predictor.make_model_arima(history)
+    
+    database.database_access.store_decision_in_db(datetime.now(), decision)
+    decision = current_framework
+    return decision
 
 
 def compute_entropy(metrics_sf, metrics_sl, metric_name, k=3, n=2):
