@@ -26,8 +26,8 @@ class LoadPredictor:
         self.model = model.fit()
         return model
 
-    def make_predictions_arima(self, model, forecast_periods=5):
-        output = model.forecast(forecast_periods)
+    def make_predictions_arima(self, forecast_periods=5):
+        output = self.model.forecast(forecast_periods)
         return output
 
     def make_predictions_sarimax(self, model, forecast_periods=5):
