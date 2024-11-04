@@ -2,11 +2,8 @@ from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
 import numpy as np
 
-
-def get_full_historic_data(cursor, table_name, framework):
-    # query = f"SELECT message_count FROM {table_name} WHERE framework = %s ORDER BY timestamp"
-    # cursor.execute(query, (framework,))
-    # return [row[0] for row in cursor.fetchall()]
+#FIXME
+def get_full_historic_data_debug(cursor, table_name, framework):
     list_sl = [
         {
             "date": "2024-11-11",
@@ -188,7 +185,7 @@ def find_most_similar_window(current_rate, historic_data):
     window_size = len(current_rate)
     for i in range(len(historic_data) - window_size + 1):
         window = historic_data[i : i + window_size]
-        history_rate = [entry["load"] for entry in window]
+        history_rate = [entry["input_rate_records_per_second"] for entry in window]
         distance = calculate_dtw(current_rate, history_rate)
 
         if distance < min_distance:
@@ -200,8 +197,8 @@ def find_most_similar_window(current_rate, historic_data):
 
 if __name__ == "__main__":
     current_rate =  [500, 500, 500, 500, 500]
-    list_sf = get_full_historic_data("", "", "SF")
-    list_sl = get_full_historic_data("", "", "SL")
+    list_sf = get_full_historic_data_debug("", "", "SF")
+    list_sl = get_full_historic_data_debug("", "", "SL")
     best_window_sf, best_distance_sf = find_most_similar_window(current_rate, list_sf)
     best_window_sl, best_distance_sl = find_most_similar_window(current_rate, list_sl)
 

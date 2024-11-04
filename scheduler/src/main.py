@@ -43,6 +43,7 @@ if __name__ == "__main__":
             path_manifest_flink_session_cluster
         )
         framework_used = utils.Utils.Framework.SF
+        window_size_dtw=10
         evaluation_event = threading.Event()
         framework_running_event = threading.Event()
         threshold_dict_sf = {"idleTime": 900, "busyTime": 100}
@@ -55,6 +56,7 @@ if __name__ == "__main__":
             dataset,
             threshold_dict_sf,
             threshold_dict_sl,
+            window_size_dtw=window_size_dtw
         )
         framework_scheduler = FrameworkScheduler(
             framework_used, evaluation_event, framework_running_event
