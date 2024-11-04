@@ -270,6 +270,7 @@ def filter_objectives_sl(response):
         logging.error(f"Error extracting metric value: {e}")
         return None
 
+#Return just the numerical value
 def get_numRecordsOut(framework: utils.Utils.Framework, application: str):
     if framework == utils.Utils.Framework.SL:
         if application == "TRAIN":
@@ -278,7 +279,7 @@ def get_numRecordsOut(framework: utils.Utils.Framework, application: str):
             metric_name = "flink_taskmanager_job_task_operator_functions_pred_mqttPublish_outEgress"
         return read_metric_from_prometheus_single_metric(metric_name)
     elif framework == utils.Utils.Framework.SF:
-        metric_name = "flink_taskmanager_job_task_numRecordsIn"
+        metric_name = "flink_taskmanager_job_task_numRecordsOut"
         response = read_metric_from_prometheus(metric_name)
         filtered_metrics = [
             result for result in response if "Sink" in result["metric"].get("task_name")
@@ -288,3 +289,25 @@ def get_numRecordsOut(framework: utils.Utils.Framework, application: str):
         for result in filtered_metrics
     ]
     return extracted_data[0]
+
+#FIXME
+#Return just the value
+def get_numRecordsInPerSecond(framework: utils.Utils.Framework, application: str):
+    if framework == utils.Utils.Framework.SL:
+        if application == "TRAIN":
+            metric_name = ""
+        elif application == "PRED":
+            metric_name = ""
+        return read_metric_from_prometheus_single_metric(metric_name)
+    elif framework == utils.Utils.Framework.SF:
+        metric_name = "flink_taskmanager_job_task_numRecordsInPerSecond"
+        response = read_metric_from_prometheus(metric_name)
+        filtered_metrics = [
+            result for result in response if "Source" in result["metric"].get("task_name")
+        ]
+    extracted_data = [
+        {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
+        for result in filtered_metrics
+    ]
+    return extracted_data[0]
+
