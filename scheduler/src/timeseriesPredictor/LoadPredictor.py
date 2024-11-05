@@ -1,16 +1,15 @@
-from statsmodels.tsa.statespace.sarimax import SARIMAX, SARIMAXResults
+#from statsmodels.tsa.statespace.sarimax import SARIMAX, SARIMAXResults
 from statsmodels.tsa.arima.model import ARIMA
 import pickle
-import database.database_access
+#import database.database_access
 import logging
-import pandas as pd
-import matplotlib.pyplot as plt
 
 
 class LoadPredictor:
     def __init__(self):
         self.model = None
 
+    """
     def make_model_sarimax(self, grouped_df):
         grouped_df = grouped_df.asfreq("30s")
         order = (4, 1, 0)
@@ -20,6 +19,13 @@ class LoadPredictor:
         )
         self.model = model.fit()
         return model
+
+         def make_predictions_sarimax(self, model, forecast_periods=5):
+        # return model.predict(forecast_periods,return_conf_int=False)
+        start = len(model.data.endog)
+        end = start + forecast_periods - 1
+        return model.predict(start=start, end=end)
+    """
 
     def make_model_arima(self, history):
         try:
@@ -38,12 +44,8 @@ class LoadPredictor:
         except Exception as e:
             logging.error("Error when predicting" + str(e))
 
-    def make_predictions_sarimax(self, model, forecast_periods=5):
-        # return model.predict(forecast_periods,return_conf_int=False)
-        start = len(model.data.endog)
-        end = start + forecast_periods - 1
-        return model.predict(start=start, end=end)
-
+   
+    """
     def save_model_to_database(self):
         binary_model = pickle.dumps(self.model)
         database.database_access.store_model_in_database("loadpredictor", binary_model)
@@ -58,6 +60,7 @@ class LoadPredictor:
         except Exception as e:
             logging.error(f"Error loading model '{model_name}': {e}")
             self.model = None
+    """
 
 
 def main():
