@@ -4,10 +4,17 @@ import timeseriesPredictor.LoadPredictor
 import database.database_access
 import datetime
 import database.database_access
+import scheduler_logic.similarity_calculation
+from collections import defaultdict
 
 
-def calculate_utility_value(throughput, latency, cpu, weights):
-    w1, w2, w3 = weights
+def calculate_utility_value(metrics_dict: dict, weights: dict):
+    w1, w2, w3 = weights["throughput"], weights["latency"], weights["cpu_load"]
+    throughput, latency, cpu = (
+        metrics_dict["throughput"],
+        metrics_dict["latency"],
+        metrics_dict["cpu_load"],
+    )
     utility = w1 * throughput - w2 * latency - w3 * cpu
     return utility
 
@@ -28,7 +35,7 @@ def normalize_weights(weights_list):
 
 
 def normalize_latency(latency):
-    latency_min, latency_max = 100, 1000
+    latency_min, latency_max = 10, 100000
     return (latency - latency_min) / (latency_max - latency_min)
 
 
@@ -37,20 +44,99 @@ def normalize_throughput(throughput):
     return (throughput - throughput_min) / (throughput_max - throughput_min)
 
 
-# FIXME
-#Implement this properly
-def run_evaluation(current_framework: utils.Utils.Framework, window_size:int):
+# FIXME: Add penalty to not running framework, either by adding something to U_score or to latency
+def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     Return either SL or SF
     Add latency penalty to not running framework, only one value
     """
-    predictor = timeseriesPredictor.LoadPredictor.LoadPredictor()
+    test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
-    predictor.make_model_arima(history)
-    
-    database.database_access.store_decision_in_db(datetime.now(), decision)
-    decision = current_framework
+    values_list = [entry["input_rate_records_per_second"] for entry in history]
+    test_instance.make_model_arima(values_list)
+    predictions = test_instance.make_predictions_arima(window_size)
+
+    historic_data_sf = database.database_access.retrieve_historic_data("SF")
+    historic_data_sl = database.database_access.retrieve_historic_data("SL")
+
+    best_window_sf, best_distance_sf = (
+        scheduler_logic.similarity_calculation.find_most_similar_window(
+            predictions, historic_data_sf
+        )
+    )
+    best_window_sl, best_distance_sl = (
+        scheduler_logic.similarity_calculation.find_most_similar_window(
+            predictions, historic_data_sl
+        )
+    )
+    if len(predictions) != window_size or (
+        len(predictions) != len(best_window_sf)
+        and len(best_window_sf) != len(best_window_sl)
+    ):
+        raise Exception("List have not the same length")
+
+    normalized_metrics_sf = [normalize_metrics(element) for element in best_window_sf]
+    normalized_metrics_sl = [normalize_metrics(element) for element in best_window_sl]
+
+    normalized_mean_metrics_sf = calculate_normalized_mean(normalized_metrics_sf)
+    normalized_mean_metrics_sl = calculate_normalized_mean(normalized_metrics_sl)
+
+    weights = calculate_weights_with_entropy(
+        normalized_mean_metrics_sf, normalized_mean_metrics_sl
+    )
+
+    u_score_list_sf = [
+        calculate_utility_value(entry, weights) for entry in normalized_metrics_sf
+    ]
+    u_score_list_sl = [
+        calculate_utility_value(entry, weights) for entry in normalized_metrics_sl
+    ]
+
+    u_score_mean_sf = sum(u_score_list_sf) / len(u_score_list_sf)
+    u_score_mean_sl = sum(u_score_list_sl) / len(u_score_list_sl)
+    decision = make_decision_based_on_score(
+        u_score_mean_sf, u_score_mean_sl, current_framework
+    )
+    database.database_access.store_decision_in_db(datetime.datetime.now(), decision)
+
     return decision
+
+
+def calculate_normalized_mean(metrics_list):
+    metrics_sum = defaultdict(float)
+    metrics_count = defaultdict(int)
+    for entry in metrics_list:
+        for metric, value in entry.items():
+            metrics_sum[metric] += value
+            metrics_count[metric] += 1
+    return {
+        metric: metrics_sum[metric] / metrics_count[metric] for metric in metrics_sum
+    }
+
+
+def make_decision_based_on_score(
+    u_mean_sf: float, u_mean_sl: float, current_framework: utils.Utils.Framework
+):
+    if u_mean_sf > u_mean_sl:
+        decision = utils.Utils.Framework.SF
+
+    elif u_mean_sf < u_mean_sl:
+        decision = utils.Utils.Framework.SL
+
+    else:
+        decision = current_framework
+    return decision
+
+
+def normalize_metrics(window_element: dict):
+    metrics_normalized = dict()
+
+    metrics_normalized["throughput"] = normalize_throughput(
+        window_element["throughput"]
+    )
+    metrics_normalized["latency"] = normalize_latency(window_element["latency"])
+    metrics_normalized["cpu_load"] = window_element["cpu_load"]
+    return metrics_normalized
 
 
 def compute_entropy(metrics_sf, metrics_sl, metric_name, k=3, n=2):
@@ -73,7 +159,8 @@ def compute_degree_of_divergence(entropy):
 def calculate_weights_with_entropy(metrics_sf: dict, metrics_sl: dict):
     divergence_sum = 0
     divergence_dict = dict()
-    for metric in metrics_sf.keys():
+    relevant_metrics = ["latency", "cpu_load", "throughput"]
+    for metric in relevant_metrics:
         entropy = compute_entropy(metrics_sf, metrics_sl, metric)
         divergence = compute_degree_of_divergence(entropy)
         divergence_dict[metric] = divergence
