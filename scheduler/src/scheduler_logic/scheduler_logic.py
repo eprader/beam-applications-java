@@ -35,20 +35,19 @@ def normalize_weights(weights_list):
 
 
 def normalize_latency(latency):
-    latency_min, latency_max = 10, 100000
+    latency_min, latency_max = 10, 600000
     return (latency - latency_min) / (latency_max - latency_min)
 
 
 def normalize_throughput(throughput):
-    throughput_min, throughput_max = 100, 1000
+    throughput_min, throughput_max = 0, 1000
     return (throughput - throughput_min) / (throughput_max - throughput_min)
 
 
-# FIXME: Add penalty to not running framework, either by adding something to U_score or to latency
 def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     Return either SL or SF
-    Add latency penalty to not running framework, only one value
+    Add latency penalty to not running framework
     """
     test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
@@ -78,6 +77,13 @@ def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     normalized_metrics_sf = [normalize_metrics(element) for element in best_window_sf]
     normalized_metrics_sl = [normalize_metrics(element) for element in best_window_sl]
 
+    if current_framework == utils.Utils.Framework.SL:
+        if "latency" in normalized_metrics_sf[-1]:
+            normalized_metrics_sf[-1]["latency"] += normalize_latency(10000)
+    else:
+        if "latency" in normalized_metrics_sl[-1]:
+            normalized_metrics_sl[-1]["latency"] += normalize_latency(10000)
+
     normalized_mean_metrics_sf = calculate_normalized_mean(normalized_metrics_sf)
     normalized_mean_metrics_sl = calculate_normalized_mean(normalized_metrics_sl)
 
@@ -97,7 +103,13 @@ def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     decision = make_decision_based_on_score(
         u_score_mean_sf, u_score_mean_sl, current_framework
     )
-    database.database_access.store_decision_in_db(datetime.datetime.now(), decision)
+    decision_dict = dict()
+    decision_dict["used_framework"] = decision
+    decision_dict["u_sf"] = u_score_mean_sf
+    decision_dict["u_sl"] = u_score_mean_sl
+    database.database_access.store_decision_in_db(
+        datetime.datetime.now(), decision_dict
+    )
 
     return decision
 
@@ -115,7 +127,10 @@ def calculate_normalized_mean(metrics_list):
 
 
 def make_decision_based_on_score(
-    u_mean_sf: float, u_mean_sl: float, current_framework: utils.Utils.Framework
+    u_mean_sf: float,
+    u_mean_sl: float,
+    current_framework: utils.Utils.Framework,
+    threshold=None,
 ):
     if u_mean_sf > u_mean_sl:
         decision = utils.Utils.Framework.SF
