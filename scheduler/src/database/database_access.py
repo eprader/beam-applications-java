@@ -100,7 +100,7 @@ def init_database():
         conn.close()
 
 
-def store_scheduler_metrics(timestamp: datetime, metrics_dict: dict, framework: str):
+def store_scheduler_metrics(timestamp: datetime, objectives_dict: dict, input_rate_dict:dict, framework: str):
     table_name = "scheduler_metrics"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -112,10 +112,10 @@ def store_scheduler_metrics(timestamp: datetime, metrics_dict: dict, framework: 
         """
         data = (
             timestamp,
-            metrics_dict["latency"],
-            metrics_dict["cpu_load"],
-            metrics_dict["throughput"],
-            metrics_dict["input_rate_records_per_second"],
+            objectives_dict["latency"],
+            objectives_dict["cpu_load"],
+            objectives_dict["throughput"],
+            input_rate_dict["input_rate_records_per_second"],
             framework,
         )
 
