@@ -2,7 +2,7 @@ from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
 import numpy as np
 
-#FIXME
+#DEBUG
 def get_full_historic_data_debug(cursor, table_name, framework):
     list_sl = [
         {
@@ -195,7 +195,7 @@ def find_most_similar_window(current_rate, historic_data):
     return best_window, min_distance
 
 
-if __name__ == "__main__":
+def main():
     current_rate =  [500, 500, 500, 500, 500]
     list_sf = get_full_historic_data_debug("", "", "SF")
     list_sl = get_full_historic_data_debug("", "", "SL")
@@ -204,3 +204,6 @@ if __name__ == "__main__":
 
     print(best_window_sf, best_distance_sf)
     print(best_window_sl, best_distance_sl)
+
+if __name__ =="__main__":
+    main()
