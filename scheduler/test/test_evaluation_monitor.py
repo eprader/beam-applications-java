@@ -107,7 +107,13 @@ def test_handle_switch(mock_sleep, evaluation_monitor):
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_no_safety_net_no_act(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -151,7 +157,13 @@ def test_monitor_iteration_no_safety_net_no_act(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_without_safety_net(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -199,7 +211,13 @@ def test_monitor_iteration_periodic_check_without_safety_net(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_with_safety_net(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -247,7 +265,13 @@ def test_monitor_iteration_periodic_check_with_safety_net(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_with_safety_net_two_times(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -295,7 +319,13 @@ def test_monitor_iteration_periodic_check_with_safety_net_two_times(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_timeout_from_safety_net(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -343,7 +373,13 @@ def test_monitor_iteration_periodic_check_timeout_from_safety_net(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_timeout_from_periodic(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
@@ -391,7 +427,13 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic(
     autospec=True,
 )
 @patch("mysql.connector.connect")
+@patch(
+    "metrics.metrics_collector.get_numRecordsInPerSecond",
+    return_value={"input_rate_records_per_second": 300},
+    autospec=True,
+)
 def test_monitor_iteration_periodic_check_timeout_from_periodic_second_periodic_check(
+    mock_get_numRecordsInPerSecond,
     mock_connect,
     mock_evaluate_and_act,
     mock_check_for_safety_net,
