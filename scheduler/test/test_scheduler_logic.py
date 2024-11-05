@@ -18,8 +18,8 @@ import utils.Utils
 
 def test_calculate_utility_value():
     throughput, latency, cpu = 0.8, 0.5, 0.3
-    metrics_dict = {"throughput": throughput, "latency":latency, "cpu_load":cpu}
-    weights = {"throughput":0.3, "latency":0.5, "cpu_load":0.2}
+    metrics_dict = {"throughput": throughput, "latency": latency, "cpu_load": cpu}
+    weights = {"throughput": 0.3, "latency": 0.5, "cpu_load": 0.2}
     utility = calculate_utility_value(metrics_dict, weights)
     expected_utility = 0.3 * throughput - 0.5 * latency - 0.2 * cpu
     assert utility == pytest.approx(expected_utility), "Utility calculation failed"
@@ -39,14 +39,14 @@ def test_normalize_weights():
 def test_normalize_throughput():
     throughput = 550
     normalized = normalize_throughput(throughput)
-    expected = (throughput - 100) / (1000 - 100)
+    expected = (throughput - 0) / (1000 - 0)
     assert normalized == pytest.approx(expected), "Throughput normalization failed"
 
 
 def test_normalize_latency():
     latency = 150
     normalized = normalize_latency(latency)
-    expected = (latency - 10) / (100000 - 10)
+    expected = (latency - 10) / (600000 - 10)
     assert normalized == pytest.approx(expected), "Latency normalization failed"
 
 
@@ -64,68 +64,261 @@ def test_normalize_dataset():
     ), "Maximum value of each column should be 1"
 
 
-# @pytest.mark.skip(reason="Test needs to be implemented once the function is ready")
+historic_sl_data = [
+    {
+        "id": 1,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 30, 0),
+        "latency": 85.4,
+        "cpu_load": 0.25,
+        "throughput": 320.0,
+        "input_rate_records_per_second": 180.5,
+        "framework": "SL",
+    },
+    {
+        "id": 2,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 31, 0),
+        "latency": 90.1,
+        "cpu_load": 0.27,
+        "throughput": 325.0,
+        "input_rate_records_per_second": 185.5,
+        "framework": "SL",
+    },
+    {
+        "id": 3,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 32, 0),
+        "latency": 87.6,
+        "cpu_load": 0.26,
+        "throughput": 322.0,
+        "input_rate_records_per_second": 182.0,
+        "framework": "SL",
+    },
+    {
+        "id": 4,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 33, 0),
+        "latency": 88.2,
+        "cpu_load": 0.28,
+        "throughput": 330.0,
+        "input_rate_records_per_second": 187.0,
+        "framework": "SL",
+    },
+    {
+        "id": 5,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 34, 0),
+        "latency": 86.5,
+        "cpu_load": 0.24,
+        "throughput": 318.0,
+        "input_rate_records_per_second": 179.0,
+        "framework": "SL",
+    },
+    {
+        "id": 6,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 35, 0),
+        "latency": 89.7,
+        "cpu_load": 0.29,
+        "throughput": 332.0,
+        "input_rate_records_per_second": 188.5,
+        "framework": "SL",
+    },
+    {
+        "id": 7,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 36, 0),
+        "latency": 84.9,
+        "cpu_load": 0.23,
+        "throughput": 315.0,
+        "input_rate_records_per_second": 177.5,
+        "framework": "SL",
+    },
+    {
+        "id": 8,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 37, 0),
+        "latency": 91.0,
+        "cpu_load": 0.30,
+        "throughput": 335.0,
+        "input_rate_records_per_second": 190.0,
+        "framework": "SL",
+    },
+    {
+        "id": 9,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 38, 0),
+        "latency": 85.8,
+        "cpu_load": 0.26,
+        "throughput": 323.0,
+        "input_rate_records_per_second": 183.0,
+        "framework": "SL",
+    },
+    {
+        "id": 10,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 39, 0),
+        "latency": 87.2,
+        "cpu_load": 0.25,
+        "throughput": 319.0,
+        "input_rate_records_per_second": 181.0,
+        "framework": "SL",
+    },
+]
+
+historic_sf_data = [
+    {
+        "id": 11,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 40, 0),
+        "latency": 78.4,
+        "cpu_load": 0.22,
+        "throughput": 310.0,
+        "input_rate_records_per_second": 170.5,
+        "framework": "SF",
+    },
+    {
+        "id": 12,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 41, 0),
+        "latency": 79.1,
+        "cpu_load": 0.23,
+        "throughput": 315.0,
+        "input_rate_records_per_second": 172.5,
+        "framework": "SF",
+    },
+    {
+        "id": 13,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 42, 0),
+        "latency": 80.0,
+        "cpu_load": 0.24,
+        "throughput": 320.0,
+        "input_rate_records_per_second": 175.0,
+        "framework": "SF",
+    },
+    {
+        "id": 14,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 43, 0),
+        "latency": 77.5,
+        "cpu_load": 0.21,
+        "throughput": 305.0,
+        "input_rate_records_per_second": 168.0,
+        "framework": "SF",
+    },
+    {
+        "id": 15,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 44, 0),
+        "latency": 82.0,
+        "cpu_load": 0.25,
+        "throughput": 325.0,
+        "input_rate_records_per_second": 178.0,
+        "framework": "SF",
+    },
+    {
+        "id": 16,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 45, 0),
+        "latency": 76.8,
+        "cpu_load": 0.20,
+        "throughput": 300.0,
+        "input_rate_records_per_second": 165.0,
+        "framework": "SF",
+    },
+    {
+        "id": 17,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 46, 0),
+        "latency": 83.1,
+        "cpu_load": 0.26,
+        "throughput": 330.0,
+        "input_rate_records_per_second": 180.0,
+        "framework": "SF",
+    },
+    {
+        "id": 18,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 47, 0),
+        "latency": 79.9,
+        "cpu_load": 0.22,
+        "throughput": 315.0,
+        "input_rate_records_per_second": 173.0,
+        "framework": "SF",
+    },
+    {
+        "id": 19,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 48, 0),
+        "latency": 81.4,
+        "cpu_load": 0.24,
+        "throughput": 318.0,
+        "input_rate_records_per_second": 174.0,
+        "framework": "SF",
+    },
+    {
+        "id": 20,
+        "timestamp": datetime.datetime(2024, 11, 4, 10, 49, 0),
+        "latency": 80.7,
+        "cpu_load": 0.23,
+        "throughput": 317.0,
+        "input_rate_records_per_second": 173.5,
+        "framework": "SF",
+    },
+]
+
+input_rate_return_data = [
+    {"input_rate_records_per_second": 505.0},
+    {"input_rate_records_per_second": 495.0},
+    {"input_rate_records_per_second": 500.0},
+    {"input_rate_records_per_second": 510.0},
+    {"input_rate_records_per_second": 495.0},
+    {"input_rate_records_per_second": 505.0},
+    {"input_rate_records_per_second": 498.0},
+    {"input_rate_records_per_second": 502.0},
+    {"input_rate_records_per_second": 497.0},
+    {"input_rate_records_per_second": 503.0},
+    {"input_rate_records_per_second": 499.0},
+    {"input_rate_records_per_second": 501.0},
+]
+
+
 @patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
 @patch("database.database_access.store_decision_in_db", autospec=True)
 @patch("database.database_access.retrieve_historic_data", autospec=True)
-def test_run_evaluation(
+def test_run_evaluation_starting_with_sf(
     mock_retrieve_historic, mock_store_decision, mock_retrieve_input_rates
 ):
-    # Mock the historical data to return a fixed set of input rates
-    mock_retrieve_input_rates.return_value = [
-        {"input_rate_records_per_second": 505.0},
-        {"input_rate_records_per_second": 495.0},
-        {"input_rate_records_per_second": 500.0},
-        {"input_rate_records_per_second": 510.0},
-        {"input_rate_records_per_second": 495.0},
-        {"input_rate_records_per_second": 505.0},
-        {"input_rate_records_per_second": 498.0},
-        {"input_rate_records_per_second": 502.0},
-        {"input_rate_records_per_second": 497.0},
-        {"input_rate_records_per_second": 503.0},
-        {"input_rate_records_per_second": 499.0},
-        {"input_rate_records_per_second": 501.0},
-    ]
-    sl_data = [
-    {'id': 1, 'timestamp': datetime.datetime(2024, 11, 4, 10, 30, 0), 'latency': 85.4, 'cpu_load': 0.25, 'throughput': 320.0, 'input_rate_records_per_second': 180.5, 'framework': 'SL'},
-    {'id': 2, 'timestamp': datetime.datetime(2024, 11, 4, 10, 31, 0), 'latency': 90.1, 'cpu_load': 0.27, 'throughput': 325.0, 'input_rate_records_per_second': 185.5, 'framework': 'SL'},
-    {'id': 3, 'timestamp': datetime.datetime(2024, 11, 4, 10, 32, 0), 'latency': 87.6, 'cpu_load': 0.26, 'throughput': 322.0, 'input_rate_records_per_second': 182.0, 'framework': 'SL'},
-    {'id': 4, 'timestamp': datetime.datetime(2024, 11, 4, 10, 33, 0), 'latency': 88.2, 'cpu_load': 0.28, 'throughput': 330.0, 'input_rate_records_per_second': 187.0, 'framework': 'SL'},
-    {'id': 5, 'timestamp': datetime.datetime(2024, 11, 4, 10, 34, 0), 'latency': 86.5, 'cpu_load': 0.24, 'throughput': 318.0, 'input_rate_records_per_second': 179.0, 'framework': 'SL'},
-    {'id': 6, 'timestamp': datetime.datetime(2024, 11, 4, 10, 35, 0), 'latency': 89.7, 'cpu_load': 0.29, 'throughput': 332.0, 'input_rate_records_per_second': 188.5, 'framework': 'SL'},
-    {'id': 7, 'timestamp': datetime.datetime(2024, 11, 4, 10, 36, 0), 'latency': 84.9, 'cpu_load': 0.23, 'throughput': 315.0, 'input_rate_records_per_second': 177.5, 'framework': 'SL'},
-    {'id': 8, 'timestamp': datetime.datetime(2024, 11, 4, 10, 37, 0), 'latency': 91.0, 'cpu_load': 0.30, 'throughput': 335.0, 'input_rate_records_per_second': 190.0, 'framework': 'SL'},
-    {'id': 9, 'timestamp': datetime.datetime(2024, 11, 4, 10, 38, 0), 'latency': 85.8, 'cpu_load': 0.26, 'throughput': 323.0, 'input_rate_records_per_second': 183.0, 'framework': 'SL'},
-    {'id': 10, 'timestamp': datetime.datetime(2024, 11, 4, 10, 39, 0), 'latency': 87.2, 'cpu_load': 0.25, 'throughput': 319.0, 'input_rate_records_per_second': 181.0, 'framework': 'SL'}
-    ]
+    mock_retrieve_input_rates.return_value = input_rate_return_data
 
-
-    sf_data = [
-    {'id': 11, 'timestamp': datetime.datetime(2024, 11, 4, 10, 40, 0), 'latency': 78.4, 'cpu_load': 0.22, 'throughput': 310.0, 'input_rate_records_per_second': 170.5, 'framework': 'SF'},
-    {'id': 12, 'timestamp': datetime.datetime(2024, 11, 4, 10, 41, 0), 'latency': 79.1, 'cpu_load': 0.23, 'throughput': 315.0, 'input_rate_records_per_second': 172.5, 'framework': 'SF'},
-    {'id': 13, 'timestamp': datetime.datetime(2024, 11, 4, 10, 42, 0), 'latency': 80.0, 'cpu_load': 0.24, 'throughput': 320.0, 'input_rate_records_per_second': 175.0, 'framework': 'SF'},
-    {'id': 14, 'timestamp': datetime.datetime(2024, 11, 4, 10, 43, 0), 'latency': 77.5, 'cpu_load': 0.21, 'throughput': 305.0, 'input_rate_records_per_second': 168.0, 'framework': 'SF'},
-    {'id': 15, 'timestamp': datetime.datetime(2024, 11, 4, 10, 44, 0), 'latency': 82.0, 'cpu_load': 0.25, 'throughput': 325.0, 'input_rate_records_per_second': 178.0, 'framework': 'SF'},
-    {'id': 16, 'timestamp': datetime.datetime(2024, 11, 4, 10, 45, 0), 'latency': 76.8, 'cpu_load': 0.20, 'throughput': 300.0, 'input_rate_records_per_second': 165.0, 'framework': 'SF'},
-    {'id': 17, 'timestamp': datetime.datetime(2024, 11, 4, 10, 46, 0), 'latency': 83.1, 'cpu_load': 0.26, 'throughput': 330.0, 'input_rate_records_per_second': 180.0, 'framework': 'SF'},
-    {'id': 18, 'timestamp': datetime.datetime(2024, 11, 4, 10, 47, 0), 'latency': 79.9, 'cpu_load': 0.22, 'throughput': 315.0, 'input_rate_records_per_second': 173.0, 'framework': 'SF'},
-    {'id': 19, 'timestamp': datetime.datetime(2024, 11, 4, 10, 48, 0), 'latency': 81.4, 'cpu_load': 0.24, 'throughput': 318.0, 'input_rate_records_per_second': 174.0, 'framework': 'SF'},
-    {'id': 20, 'timestamp': datetime.datetime(2024, 11, 4, 10, 49, 0), 'latency': 80.7, 'cpu_load': 0.23, 'throughput': 317.0, 'input_rate_records_per_second': 173.5, 'framework': 'SF'}
-    ]
     def side_effect_function(framework):
         if framework == "SL":
-            return sl_data
+            return historic_sl_data
         elif framework == "SF":
-            return sf_data
-        
+            return historic_sf_data
+
     mock_retrieve_historic.side_effect = side_effect_function
-    
+
     current_framework = "SF"
     window_size = 5
     result = run_evaluation(current_framework, window_size)
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
     mock_retrieve_input_rates.assert_called_once()
     mock_store_decision.assert_called_once()
+
+    store_decision_args = mock_store_decision.call_args
+    print("store_decision arguments:", store_decision_args)
+
+
+@patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
+@patch("database.database_access.store_decision_in_db", autospec=True)
+@patch("database.database_access.retrieve_historic_data", autospec=True)
+def test_run_evaluation_starting_with_sl(
+    mock_retrieve_historic, mock_store_decision, mock_retrieve_input_rates
+):
+    mock_retrieve_input_rates.return_value = input_rate_return_data
+
+    def side_effect_function(framework):
+        if framework == "SL":
+            return historic_sl_data
+        elif framework == "SF":
+            return historic_sf_data
+
+    mock_retrieve_historic.side_effect = side_effect_function
+
+    current_framework = "SL"
+    window_size = 5
+    result = run_evaluation(current_framework, window_size)
+    assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    mock_retrieve_input_rates.assert_called_once()
+    mock_store_decision.assert_called_once()
+
+    store_decision_args = mock_store_decision.call_args
+    print("store_decision arguments:", store_decision_args)
+
 
 def test_compute_entropy():
     metrics_sf = {"latency": 100, "cpu_load": 0.5, "throughput": 800}
