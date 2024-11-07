@@ -45,11 +45,15 @@ def normalize_throughput(throughput):
 
 
 def check_historic_data_validity(historic_data, window_size: int):
-    if len(historic_data) == 0:
+    try:
+        if len(historic_data) == 0:
+            return False
+        if len(historic_data[0]) < window_size:
+            return False
+        return True
+    except Exception as e:
+        logging.error("Error when evaluating data for ARIMA")
         return False
-    if len(historic_data) < window_size:
-        return False
-    return True
 
 
 def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
@@ -59,7 +63,7 @@ def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
-    if check_historic_data_validity(history):
+    if check_historic_data_validity(history, window_size):
         logging.warning("input data for ARIMA too small")
         return current_framework
     
