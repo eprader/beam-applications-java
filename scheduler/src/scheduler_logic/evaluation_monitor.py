@@ -82,7 +82,7 @@ class EvaluationMonitor:
 
     def check_for_safety_net(self, metrics_dic: dict):
         try:
-            if self.running_framework is utils.Utils.Framework.SF:
+            if self.running_framework == utils.Utils.Framework.SF:
                 for metric, value in metrics_dic.items():
                     if metric == "idleTime":
                         if value > self.threshold_dict_sf[metric]:
@@ -90,7 +90,7 @@ class EvaluationMonitor:
                     if metric == "busyTime":
                         if value < self.threshold_dict_sf[metric]:
                             return True
-            if self.running_framework is utils.Utils.Framework.SL:
+            if self.running_framework == utils.Utils.Framework.SL:
                 for metric, value in metrics_dic.items():
                     if value > self.threshold_dict_sl[metric]:
                         return True
@@ -101,14 +101,14 @@ class EvaluationMonitor:
 
     def collect_metrics(self):
         try:
-            if self.running_framework is utils.Utils.Framework.SF:
+            if self.running_framework == utils.Utils.Framework.SF:
                 return (
                     metrics.metrics_collector.get_objectives_for_sf(self.application),
                     metrics.metrics_collector.get_critical_metrics_for_sf(
                         self.application
                     ),
                 )
-            elif self.running_framework is utils.Utils.Framework.SL:
+            elif self.running_framework == utils.Utils.Framework.SL:
                 return (
                     metrics.metrics_collector.get_objectives_for_sl(self.application),
                     metrics.metrics_collector.get_critical_metrics_for_sl(),
@@ -126,12 +126,10 @@ class EvaluationMonitor:
             self.handle_switch(decision)
             return True
         else:
-            # database.database_access.store_decision_in_db(datetime.now(),self.running_framework)
             return False
 
     def handle_switch(self, decision: utils.Utils.Framework):
         self.evaluation_event.set()
-        # database.database_access.store_decision_in_db(datetime.now(), decision)
         while self.evaluation_event.is_set():
             time.sleep(30)
             logging.info("Waiting for event to unset")
