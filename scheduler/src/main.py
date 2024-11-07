@@ -12,7 +12,7 @@ import database.database_access
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.INFO,
+    level=logging.WARN,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
@@ -23,9 +23,7 @@ def handle_sigterm(signum, frame):
     exit(0)
 
 
-def cleanup(
-    framework_scheduler: FrameworkScheduler,
-):
+def cleanup(framework_scheduler: FrameworkScheduler):
     framework_scheduler.cleanup()
 
 
@@ -79,13 +77,16 @@ if __name__ == "__main__":
             target=evaluation_monitor.start_monitoring, name="MetricsMonitorThread"
         )
 
-        database.database_access.init_database()
+        # FIXME debug flag
+        database.database_access.init_database(True)
 
         scheduler_thread.start()
         monitor_thread.start()
 
         scheduler_thread.join()
+        logging.error("Scheduler thread has joined")
         monitor_thread.join()
+        logging.error("Monitor thread has joined")
 
     except KeyboardInterrupt:
         logging.info("Shutting down")
