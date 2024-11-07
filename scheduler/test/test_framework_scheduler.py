@@ -176,7 +176,8 @@ def test_main_loop_logic_serverful(mock_framework_scheduler):
     ) = mock_framework_scheduler
     serverful_topic = "senml-cleaned"
     number_sent_messages = 0
-    scheduler.main_loop_logic(serverful_topic, number_sent_messages)
+    ret_value = scheduler.main_loop_logic(serverful_topic, number_sent_messages)
+    assert ret_value == 1
     scheduler.producer.send.assert_called_once()
 
 
@@ -195,5 +196,6 @@ def test_main_loop_logic_serverless(mock_framework_scheduler):
     serverful_topic = "senml-cleaned"
     number_sent_messages = 0
     scheduler.framework_used = utils.Utils.Framework.SL
-    scheduler.main_loop_logic(serverful_topic, number_sent_messages)
+    ret_value =scheduler.main_loop_logic(serverful_topic, number_sent_messages)
+    assert ret_value == 1
     scheduler.producer.send.assert_called_once()
