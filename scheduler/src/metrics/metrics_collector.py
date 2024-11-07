@@ -321,3 +321,11 @@ def get_numRecordsInPerSecond(framework: utils.Utils.Framework, application: str
         return_dict = dict()
         return_dict["input_rate_records_per_second"] = float(filtered_value[0])
         return return_dict
+
+
+def main():
+    print(get_critical_metrics_for_sf("PRED"))
+
+
+if __name__ == "__main__":
+    main()
