@@ -11,4 +11,5 @@ delete:
 	kubectl delete -f config_scheduler/scheduler-manifest.yaml
 
 logs:
-	kubectl logs -l app=scheduler
+	kubectl logs -l app=scheduler -f
+#--limit-bytes=500000
