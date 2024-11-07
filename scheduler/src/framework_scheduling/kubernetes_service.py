@@ -381,11 +381,15 @@ def make_change(
     dataset,
 ):
     while True:
-        if 2 * number_messages_sent >= metrics.metrics_collector.get_numRecordsOut(
-            framework_used, application
-        ):
+        try:
+            if 2 * number_messages_sent >= metrics.metrics_collector.get_numRecordsOut(
+                framework_used, application
+            ):
+                break
+            time.sleep(20)
+        except Exception as e:
+            logging.error("Error when changing frameworks "+str(e))
             break
-        time.sleep(20)
 
     if framework_used == utils.Utils.Framework.SL:
         terminate_serverless_framework()
