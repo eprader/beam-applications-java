@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flink-job-metrics-statefun
+  labels:
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames: 
+    - statefun
+  selector:
+    matchLabels:
+      app: statefun
+  podMetricsEndpoints:
+      - port: metrics
