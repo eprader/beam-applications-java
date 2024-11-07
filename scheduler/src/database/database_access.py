@@ -80,15 +80,17 @@ def create_historic_metrics_table(cursor):
     logging.info(f"Table '{table_name}' checked/created.")
 
 
-def init_database():
+def init_database(debug_Flag=False):
     try:
+        if debug_Flag:
+            delete_tables()
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
         create_database(cursor, db_name)
         conn.database = db_name
         create_metrics_table(cursor)
         create_framework_start_times_table(cursor)
-        create_model_storage_table(cursor)
+        # create_model_storage_table(cursor)
         create_historic_metrics_table(cursor)
         print("Database and table initialized successfully.")
 
@@ -100,7 +102,12 @@ def init_database():
         conn.close()
 
 
-def store_scheduler_metrics(timestamp: datetime, objectives_dict: dict, input_rate_dict:dict, framework: str):
+def store_scheduler_metrics(
+    timestamp: datetime, objectives_dict: dict, input_rate_dict: dict, framework: str
+):
+    logging.warning(
+        "Scheduler_met: " + str(objectives_dict) + " " + str(input_rate_dict)
+    )
     table_name = "scheduler_metrics"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -130,6 +137,7 @@ def store_scheduler_metrics(timestamp: datetime, objectives_dict: dict, input_ra
 
 
 def store_decision_in_db(timestamp: datetime, decision_dict: dict):
+    logging.warning("Decision: " + str(decision_dict))
     start_times_table_name = "framework_start_times"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -159,6 +167,7 @@ def store_decision_in_db(timestamp: datetime, decision_dict: dict):
 
 def store_historic_data(timestamp, metrics_dict: dict):
     table_name = "historic_metrics"
+    logging.warning("Historic: " + str(metrics_dict))
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor()
