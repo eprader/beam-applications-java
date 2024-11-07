@@ -84,6 +84,8 @@ class EvaluationMonitor:
         try:
             if self.running_framework == utils.Utils.Framework.SF:
                 for metric, value in metrics_dic.items():
+                    if value == None:
+                        continue
                     if metric == "idleTime":
                         if value > self.threshold_dict_sf[metric]:
                             return True
@@ -92,6 +94,8 @@ class EvaluationMonitor:
                             return True
             if self.running_framework == utils.Utils.Framework.SL:
                 for metric, value in metrics_dic.items():
+                    if value == None:
+                        continue
                     if value > self.threshold_dict_sl[metric]:
                         return True
         except Exception as e:
