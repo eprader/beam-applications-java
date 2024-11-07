@@ -1,4 +1,5 @@
 import logging
+import traceback
 import os
 import signal
 import sys
@@ -90,6 +91,7 @@ if __name__ == "__main__":
         logging.info("Shutting down")
     except Exception as e:
         logging.error(f"An error occurred in the main class: {e}")
+        logging.error("Traceback details:\n%s", traceback.format_exc())
 
     finally:
         cleanup(framework_scheduler)
