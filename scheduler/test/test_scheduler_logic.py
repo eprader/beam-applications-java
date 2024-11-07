@@ -282,7 +282,7 @@ def test_run_evaluation_starting_with_sf(
 
     mock_retrieve_historic.side_effect = side_effect_function
 
-    current_framework = "SF"
+    current_framework = utils.Utils.Framework.SF
     window_size = 5
     result = run_evaluation(current_framework, window_size)
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
@@ -309,7 +309,7 @@ def test_run_evaluation_starting_with_sl(
 
     mock_retrieve_historic.side_effect = side_effect_function
 
-    current_framework = "SL"
+    current_framework =  utils.Utils.Framework.SL
     window_size = 5
     result = run_evaluation(current_framework, window_size)
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
