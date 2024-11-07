@@ -21,7 +21,7 @@ class EvaluationMonitor:
         window_size_dtw: int,
         periodic_checking_min=1,
         timeout_duration_min=10,
-        sleep_interval_seconds=30,
+        sleep_interval_seconds=60,
     ) -> None:
         self.interval_seconds = periodic_checking_min * 60
         self.application = application
@@ -49,12 +49,16 @@ class EvaluationMonitor:
         timeout_counter = self.timeout_counter
         periodic_counter = self.periodic_counter
         collected_metrics = self.collect_metrics()
-        if collected_metrics[0] is None or collected_metrics[1] is None:
-            logging.warning("Collect_metrics returned None value")
-            return
         input_rate_dict = metrics.metrics_collector.get_numRecordsInPerSecond(
             self.running_framework, self.application
         )
+        if (
+            collected_metrics[0] is None
+            or collected_metrics[1] is None
+            or len(input_rate_dict) == 0
+        ):
+            logging.warning("Collect_metrics returned None value")
+            return
         database.database_access.store_scheduler_metrics(
             datetime.now(),
             collected_metrics[0],
