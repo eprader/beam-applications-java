@@ -1,9 +1,9 @@
 import numpy as np
 import utils.Utils
+import logging
 import timeseriesPredictor.LoadPredictor
 import database.database_access
 import datetime
-import database.database_access
 import scheduler_logic.similarity_calculation
 from collections import defaultdict
 
@@ -44,6 +44,14 @@ def normalize_throughput(throughput):
     return (throughput - throughput_min) / (throughput_max - throughput_min)
 
 
+def check_historic_data_validity(historic_data, window_size: int):
+    if len(historic_data) == 0:
+        return False
+    if len(historic_data) < window_size:
+        return False
+    return True
+
+
 def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     Return either SL or SF
@@ -51,12 +59,25 @@ def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
+    if check_historic_data_validity(history):
+        logging.warning("input data for ARIMA too small")
+        return current_framework
+    
     values_list = [entry["input_rate_records_per_second"] for entry in history]
     test_instance.make_model_arima(values_list)
     predictions = test_instance.make_predictions_arima(window_size)
 
     historic_data_sf = database.database_access.retrieve_historic_data("SF")
     historic_data_sl = database.database_access.retrieve_historic_data("SL")
+
+    if not (
+        check_historic_data_validity(historic_data_sf, window_size)
+        and check_historic_data_validity(historic_data_sl, window_size)
+    ):
+        logging.warning(
+            "No decision could be made, because historic data has not enough entries"
+        )
+        return current_framework
 
     best_window_sf, best_distance_sf = (
         scheduler_logic.similarity_calculation.find_most_similar_window(
