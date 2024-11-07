@@ -31,6 +31,7 @@ def cleanup(
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, handle_sigterm)
     try:
+        # Get settings from the manifest
         application = os.getenv("APPLICATION")
         mongodb_address = os.getenv("MONGODB")
         dataset = os.getenv("DATASET")
@@ -42,24 +43,26 @@ if __name__ == "__main__":
         manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
             path_manifest_flink_session_cluster
         )
-        framework_used = utils.Utils.Framework.SF
-        window_size_dtw=10
-        evaluation_event = threading.Event()
-        framework_running_event = threading.Event()
+        # User settings
+        start_framework = utils.Utils.Framework.SF
+        window_size_dtw = 10
         threshold_dict_sf = {"idleTime": 900, "busyTime": 100}
         threshold_dict_sl = {"busyTime": 800, "backPressuredTime": 800}
+
+        framework_running_event = threading.Event()
+        evaluation_event = threading.Event()
         evaluation_monitor = scheduler_logic.evaluation_monitor.EvaluationMonitor(
-            framework_used,
+            start_framework,
             evaluation_event,
             framework_running_event,
             application,
             dataset,
             threshold_dict_sf,
             threshold_dict_sl,
-            window_size_dtw=window_size_dtw
+            window_size_dtw=window_size_dtw,
         )
         framework_scheduler = FrameworkScheduler(
-            framework_used, evaluation_event, framework_running_event
+            start_framework, evaluation_event, framework_running_event
         )
         scheduler_thread = threading.Thread(
             target=framework_scheduler.main_run,
