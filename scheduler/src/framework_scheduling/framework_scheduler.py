@@ -126,4 +126,4 @@ class FrameworkScheduler:
                         logging.info(
                             f"Number of sent messages serverless: {number_messages_sent}"
                         )
-        return
+        return number_messages_sent
