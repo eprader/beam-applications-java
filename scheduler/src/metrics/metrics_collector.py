@@ -368,7 +368,7 @@ def get_numRecordsInPerSecond(framework: utils.Utils.Framework, application: str
             return_dict["input_rate_records_per_second"] = float(filtered_value[0])
             return return_dict
     except Exception as e:
-        logging.error(f"Error, when getting numRecordsOut from prometheus: {e}")
+        logging.error(f"Error, when getting numRecordsInPerSecond from prometheus: {e}")
         return dict()
 
 
