@@ -31,7 +31,7 @@ data:
 
     #Monitoring
     metrics.reporters: prom
-    metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
     metrics.reporter.prom.port: 9999
     # Added for latency tracking
     taskmanager.latency-tracking-interval: 30000  # 30000 milliseconds (30 seconds)
@@ -122,11 +122,13 @@ spec:
       labels:
         app: statefun
         component: master
+        release: prometheus
     spec:
       containers:
         - name: master
-          image: apache/flink-statefun:3.2.0
-          imagePullPolicy: IfNotPresent
+          image: jungerindy/3.4-snapshot
+          imagePullPolicy: Always
+          #imagePullPolicy: IfNotPresent
           env:
             - name: ROLE
               value: master
@@ -194,11 +196,12 @@ spec:
       labels:
         app: statefun
         component: worker
+        relase: prometheus
     spec:
       containers:
         - name: worker
-          image: apache/flink-statefun:3.2.0
-          imagePullPolicy: IfNotPresent
+          image: jungerindy/3.4-snapshot
+          imagePullPolicy: Always
           env:
             - name: ROLE
               value: worker

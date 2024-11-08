@@ -19,7 +19,7 @@ spec:
       containers:
       - name: statefun-starter
         image: jungerindy/statefunstarter:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: APPLICATION
           value: "PRED"
