@@ -16,7 +16,7 @@ db_name = os.getenv("MYSQL_DATABASE", "schedulerdb")
 
 def create_database(cursor, db_name):
     cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-    print(f"Database '{db_name}' checked/created.")
+    logging.info(f"Database '{db_name}' checked/created.")
 
 
 def create_metrics_table(cursor):
@@ -92,10 +92,10 @@ def init_database(debug_Flag=False):
         create_framework_start_times_table(cursor)
         # create_model_storage_table(cursor)
         create_historic_metrics_table(cursor)
-        print("Database and table initialized successfully.")
+        logging.info("Database and table initialized successfully.")
 
     except Error as e:
-        print(f"Error during database initialization: {e}")
+        logging.error(f"Error during database initialization: {e}")
 
     finally:
         cursor.close()
@@ -295,13 +295,16 @@ def retrieve_decisions():
         return None
 
 
-# DEBUG ONLY
 def delete_tables():
+    """
+    DEBUG only
+    """
+    logging.warning("All tables will be dropped")
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor()
 
-        tables = ["scheduler_metrics", "framework_start_times", "historic data"]
+        tables = ["scheduler_metrics", "framework_start_times", "historic_metrics"]
 
         for table_name in tables:
             drop_query = f"DROP TABLE IF EXISTS {table_name}"
