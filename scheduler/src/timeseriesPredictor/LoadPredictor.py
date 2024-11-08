@@ -12,9 +12,10 @@ class LoadPredictor:
         try:
             model = ARIMA(history, order=(5, 1, 0))
             self.model = model.fit()
-            return self.model
+            return True
         except Exception as e:
             logging.error("Error when creating ARIMA model", e)
+            return False
 
     def make_predictions_arima(self, my_periods):
         try:
@@ -24,6 +25,7 @@ class LoadPredictor:
             return output
         except Exception as e:
             logging.error("Error when predicting" + str(e))
+            return []
 
     def save_model_to_database(self):
         binary_model = pickle.dumps(self.model)
