@@ -21,7 +21,7 @@ class EvaluationMonitor:
         window_size_dtw: int,
         periodic_checking_min=1,
         timeout_duration_min=10,
-        sleep_interval_seconds=60,
+        sleep_interval_seconds=60 * 2,
     ) -> None:
         self.interval_seconds = periodic_checking_min * 60
         self.application = application
@@ -52,24 +52,26 @@ class EvaluationMonitor:
         input_rate_dict = metrics.metrics_collector.get_numRecordsInPerSecond(
             self.running_framework, self.application
         )
-        if (
-            collected_metrics[0] is None
-            or collected_metrics[1] is None
-            or len(input_rate_dict) == 0
-        ):
-            logging.warning("Collect_metrics returned None value")
+        if collected_metrics[0] is None or len(input_rate_dict) == 0:
+            logging.warning("Collected objectives are None")
             return
+
         database.database_access.store_scheduler_metrics(
             datetime.now(),
             collected_metrics[0],
             input_rate_dict,
             self.running_framework.name,
         )
+        if collected_metrics[1] is None:
+            logging.warning("Collected critical metrics are None")
+
+        logging.warning("Safety net metrics " + str(collected_metrics[1]))
         if self.check_for_safety_net(collected_metrics[1]) and timeout_counter == 0:
+            logging.warning("Safety net triggered")
             if self.evaluate_and_act():
                 timeout_counter = self.timeout_duration_sec / self.sleep_interval
         elif periodic_counter >= periodic_checks and timeout_counter == 0:
-            logging.info("Periodical check-up")
+            logging.warning("Periodical check-up")
             if self.evaluate_and_act():
                 timeout_counter = self.timeout_duration_sec / self.sleep_interval
                 periodic_counter = 0
