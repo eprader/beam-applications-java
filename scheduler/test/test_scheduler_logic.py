@@ -290,7 +290,7 @@ def test_run_evaluation_starting_with_sf(
     mock_store_decision.assert_called_once()
 
     store_decision_args = mock_store_decision.call_args
-    print("store_decision arguments:", store_decision_args)
+    #print("store_decision arguments:", store_decision_args)
 
 
 @patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
@@ -317,7 +317,7 @@ def test_run_evaluation_starting_with_sl(
     mock_store_decision.assert_called_once()
 
     store_decision_args = mock_store_decision.call_args
-    print("store_decision arguments:", store_decision_args)
+    #print("store_decision arguments:", store_decision_args)
 
 
 def test_compute_entropy():
