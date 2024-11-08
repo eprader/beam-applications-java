@@ -48,11 +48,21 @@ def check_historic_data_validity(historic_data, window_size: int):
     try:
         if len(historic_data) == 0:
             return False
-        if len(historic_data[0]) < window_size:
+        if len(historic_data) < window_size:
             return False
         return True
     except Exception as e:
-        logging.error("Error when evaluating data for ARIMA")
+        logging.error(f"Error when evaluating input rate data for ARIMA: {e}")
+        return False
+
+
+def check_load_prediction_data(data, window_size: int):
+    try:
+        if len(data) < window_size * 2:
+            return False
+        return True
+    except Exception as e:
+        logging.error(f"Error when evaluating historic data for ARIMA: {e}")
         return False
 
 
@@ -63,13 +73,20 @@ def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
     """
     test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
-    if check_historic_data_validity(history, window_size):
+    if not check_load_prediction_data(history, window_size):
         logging.warning("input data for ARIMA too small")
         return current_framework
-    
+
     values_list = [entry["input_rate_records_per_second"] for entry in history]
-    test_instance.make_model_arima(values_list)
+    is_arima_created = test_instance.make_model_arima(values_list)
+    if not is_arima_created:
+        logging.error("Error when creating ARIMA model")
+        return current_framework
+
     predictions = test_instance.make_predictions_arima(window_size)
+    if len(predictions) != window_size:
+        logging.error("Error when making predictions with ARIMA model")
+        return current_framework
 
     historic_data_sf = database.database_access.retrieve_historic_data("SF")
     historic_data_sl = database.database_access.retrieve_historic_data("SL")
