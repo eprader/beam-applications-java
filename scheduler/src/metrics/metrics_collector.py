@@ -236,7 +236,7 @@ def get_objectives_for_sf(application):
                 objectives["cpu_load"] = numeric_value
             elif "custom_latency" in metric:
                 objectives["latency"] = numeric_value
-            logging.info(f"Value for {metric}: {numeric_value}")
+            logging.debug(f"Value for {metric}: {numeric_value}")
         return objectives
     except Exception as e:
         logging.error("Error, when getting objectives_sf " + str(e))
@@ -261,7 +261,11 @@ def get_objectives_for_sl(application):
 
         for metric in objectives_sl:
             if metric == "latency":
-                objectives[metric] = float(get_latest_latency_value_sl())
+                value = get_latest_latency_value_sl()
+                if value != None:
+                    objectives[metric] = float(value)
+                else:
+                    objectives[metric] = value
                 continue
 
             values = read_metric_from_prometheus(metric)
@@ -271,12 +275,11 @@ def get_objectives_for_sl(application):
                 logging.warning(f"No values returned for {metric}")
             else:
                 numeric_value = filter_objectives_sl(values)
-
             if "CPU_Load" in metric:
-                objectives["CPU_Load"] = numeric_value
+                objectives["cpu_load"] = numeric_value
             elif "outLocalRate" in metric:
                 objectives["throughput"] = numeric_value
-            logging.info(f"Value for {metric}: {numeric_value}")
+            logging.debug(f"Value for {metric}: {numeric_value}")
 
         return objectives
 
@@ -290,6 +293,7 @@ def get_latest_latency_value_sl():
         kafka_consumer = KafkaConsumer(
             "pred-publish",
             bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+            group_id="scheduler-metric-consumer",
         )
         message = next(kafka_consumer.poll(timeout_ms=1000).values())
         if message:
@@ -360,7 +364,7 @@ def get_numRecordsInPerSecond(framework: utils.Utils.Framework, application: str
             filtered_value = [
                 entry["value"][1]
                 for entry in response["data"]["result"]
-                if "functions" in entry["metric"].get("task_name", "")
+                if "functions____Sink:_pred_publish_egress" in entry["metric"].get("task_name", "")
             ]
             if len(filtered_value) != 1:
                 raise Exception("Filtered values list is too long")
