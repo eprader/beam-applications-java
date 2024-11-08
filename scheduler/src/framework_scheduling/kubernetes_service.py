@@ -174,6 +174,7 @@ def start_deployment_and_service(path_manifest, is_statefun_starter=False):
     k8s_apps_v1 = client.AppsV1Api()
     deployment_name = None
     service_name = None
+    config_map_name = None
     start_time = time.time()
     for doc in path_manifest:
         kind = doc.get("kind")
@@ -211,13 +212,22 @@ def start_deployment_and_service(path_manifest, is_statefun_starter=False):
             end_time = time.time()
             duration = end_time - start_time
             logging.info(f"Time taken to create deployment: {duration:.2f} seconds")
+        else:
+            logging.error(
+                "Deployment or Service did not become ready in time for statefun runtime."
+            )
+
     elif deployment_name and is_statefun_starter:
         if wait_for_deployment(k8s_apps_v1, deployment_name):
             end_time = time.time()
             duration = end_time - start_time
             logging.info(f"Time taken to create deployment: {duration:.2f} seconds")
         else:
-            logging.error("Deployment or Service did not become ready in time.")
+            logging.error(
+                "Deployment or Service did not become ready in time for statefunStarter."
+            )
+    elif config_map_name:
+        logging.info("Config map created")
     else:
         logging.error("Deployment or Service name not found in manifest.")
 
@@ -279,39 +289,49 @@ def is_service_ready(k8s_core_v1, service_name, namespace="statefun"):
 
 
 def create_minio():
-    manifest = utils.Utils.read_manifest("/app/minio.yaml")
+    manifest = utils.Utils.read_manifest("/app/config_frameworks/minio.yaml")
     start_deployment_and_service(manifest)
 
 
 def create_statefun_environment():
-    # Note this is a ConfigMap
-    manifest_module = utils.Utils.read_manifest("/app/00-module.yaml")
-    manifest_runtime = utils.Utils.read_manifest("/app/01-statefun-runtime.yaml")
+    # Note this contains only one ConfigMap
+    manifest_module = utils.Utils.read_manifest("/app/config_frameworks/00-module.yaml")
+    manifest_runtime = utils.Utils.read_manifest(
+        "/app/config_frameworks/01-statefun-runtime.yaml"
+    )
     start_deployment_and_service(manifest_module)
     start_deployment_and_service(manifest_runtime)
 
 
 def create_statefun_starter(mongodb, dataset, application):
     manifest = utils.Utils.read_manifest_statefun_starter(
-        "/app/statefunStarter-manifest.yaml", mongodb, dataset, application, False
+        "/app/config_frameworks/statefunStarter-manifest.yaml",
+        mongodb,
+        dataset,
+        application,
+        False,
     )
     start_deployment_and_service(manifest, True)
 
 
 def delete_minio():
-    manifest = utils.Utils.read_manifest("/app/minio.yaml")
+    manifest = utils.Utils.read_manifest("/app/config_frameworks/minio.yaml")
     terminate_deployment_and_service(manifest)
 
 
 def delete_statefun_environment():
-    manifest_module = utils.Utils.read_manifest("/app/00-module.yaml")
-    manifest_runtime = utils.Utils.read_manifest("/app/01-statefun-runtime.yaml")
+    manifest_module = utils.Utils.read_manifest("/app/config_frameworks/00-module.yaml")
+    manifest_runtime = utils.Utils.read_manifest(
+        "/app/config_frameworks/01-statefun-runtime.yaml"
+    )
     terminate_deployment_and_service(manifest_module)
     terminate_deployment_and_service(manifest_runtime)
 
 
 def delete_statefun_starter():
-    manifest = utils.Utils.read_manifest("/app/statefunStarter-manifest.yaml")
+    manifest = utils.Utils.read_manifest(
+        "/app/config_frameworks/statefunStarter-manifest.yaml"
+    )
     terminate_deployment_and_service(manifest)
 
 
@@ -323,8 +343,11 @@ def terminate_serverless_framework():
 
 def create_serverless_framework(mongodb, dataset, application):
     create_minio()
+    logging.warning("Minio created")
     create_statefun_environment()
+    logging.warning("Statefun env created")
     create_statefun_starter(mongodb, dataset, application)
+    logging.warning("Statefun starter created")
 
 
 def create_serverful_framework(dataset, path_manifest, mongodb_address, application):
@@ -388,7 +411,7 @@ def make_change(
                 break
             time.sleep(20)
         except Exception as e:
-            logging.error("Error when changing frameworks "+str(e))
+            logging.error("Error when changing frameworks " + str(e))
             break
 
     if framework_used == utils.Utils.Framework.SL:
