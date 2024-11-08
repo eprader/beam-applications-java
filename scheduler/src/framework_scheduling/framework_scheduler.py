@@ -23,6 +23,7 @@ class FrameworkScheduler:
         self.consumer = KafkaConsumer(
             "scheduler-input",
             bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+            group_id="scheduler-framework-scheduler",
         )
         self.producer = KafkaProducer(
             bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
@@ -53,7 +54,10 @@ class FrameworkScheduler:
             raise e
 
     def main_run(self, manifest_docs, application, dataset, mongodb):
-        self.main_loop_setup(manifest_docs, application, dataset, mongodb)
+        setup_successful = self.main_loop_setup(manifest_docs, application, dataset, mongodb)
+        if not setup_successful:
+            logging.error("Exiting main_run")
+            return
         self.framework_is_running = True
         self.framework_running_event.set()
         if application == "TRAIN":
@@ -96,7 +100,7 @@ class FrameworkScheduler:
             return True
         except Exception as e:
             logging.error("Error, when setting up main loop", e)
-            return e
+            return False
 
     # FIXME: Check if from the KafkaProducer a byte or a string arrives as messages
     # this is important for the value in the producer
