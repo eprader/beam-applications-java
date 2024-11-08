@@ -1,6 +1,6 @@
-.PHONY: configmap image service logs delete
+.PHONY: configmap image_local service logs delete
 
-image:
+image_local:
 	export $(shell minikube docker-env)
 	docker build . -t scheduler-image
 
@@ -13,3 +13,9 @@ delete:
 logs:
 	kubectl logs -l app=scheduler -f
 #--limit-bytes=500000
+
+docker:
+	docker build . -t scheduler
+	docker tag scheduler:latest jungerindy/scheduler:latest
+	docker push jungerindy/scheduler:latest
+
