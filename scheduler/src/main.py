@@ -89,7 +89,7 @@ if __name__ == "__main__":
         logging.error("Monitor thread has joined")
 
     except KeyboardInterrupt:
-        logging.info("Shutting down")
+        logging.warning("Shutting down")
     except Exception as e:
         logging.error(f"An error occurred in the main class: {e}")
         logging.error("Traceback details:\n%s", traceback.format_exc())
