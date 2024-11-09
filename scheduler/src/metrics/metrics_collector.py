@@ -75,7 +75,9 @@ def filter_critical_values_sf(response, application: str):
         {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
         for result in filtered_metrics
     ]
-
+    if application == "PRED":
+        if len(extracted_data) != 7:
+            logging.warning("Length of critical values sf is not complete")
     return extracted_data
 
 
@@ -88,7 +90,6 @@ def check_operator_name_sf(name, application: str):
             "ErrorEstimateBeam2",
             "LinearRegressionBeam1",
             "ParsePredictBeam",
-            "Sink",
             "SourceBeam",
         ]
     elif application == "TRAIN":
@@ -97,7 +98,6 @@ def check_operator_name_sf(name, application: str):
             "BlobWriteBeam",
             "DecisionTreeBeam",
             "LinearRegressionBeam",
-            "Sink",
             "TableReadBeam",
             "TimerSourceBeam",
         ]
@@ -178,8 +178,11 @@ def filter_num_records_in_sf(response, application: str):
         filtered_metrics = [
             result
             for result in response
-            if "Source" in result.get("metric", {}).get("task_name", "")
+            if "ParMultiDo_SourceBeam" in result.get("metric", {}).get("task_name", "")
         ]
+        if len(filtered_metrics) != 1:
+            logging.warning("Filter num_records_in has more than one operator")
+
         extracted_data = [
             {
                 "task_name": result.get("metric", {}).get("task_name", ""),
@@ -199,6 +202,7 @@ def calculate_mean_of_dicts(filtered_response):
         for metric in filtered_response
         if metric["value"].replace(".", "", 1).isdigit()
     ]
+    logging.warning(str(values))
     if values:
         mean_value = sum(values) / len(values)
         return mean_value
@@ -230,7 +234,7 @@ def get_objectives_for_sf(application):
                         values.get("data", {}).get("result", []), application
                     )
 
-            if "numRecordsOut" in metric:
+            if "numRecordsOutPerSecond" in metric:
                 objectives["throughput"] = numeric_value
             elif "CPU_Load" in metric:
                 objectives["cpu_load"] = numeric_value
@@ -364,7 +368,8 @@ def get_numRecordsInPerSecond(framework: utils.Utils.Framework, application: str
             filtered_value = [
                 entry["value"][1]
                 for entry in response["data"]["result"]
-                if "functions____Sink:_pred_publish_egress" in entry["metric"].get("task_name", "")
+                if "functions____Sink:_pred_publish_egress"
+                in entry["metric"].get("task_name", "")
             ]
             if len(filtered_value) != 1:
                 raise Exception("Filtered values list is too long")
