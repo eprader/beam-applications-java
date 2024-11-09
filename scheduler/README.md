@@ -2,7 +2,8 @@
 
 Follow the steps below to apply the necessary roles, role bindings, service accounts, and cluster roles in your Kubernetes environment.
 
-Please make sure to create the statefun namespace before and both metrics_monitors.
+Please make sure to create the statefun namespace before and apply both metrics_monitors in the
+``utils``-folder.
 
 [Mysql deployment] (https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/)
 
