@@ -208,7 +208,6 @@ def calculate_mean_of_dicts(filtered_response):
         for metric in filtered_response
         if metric["value"].replace(".", "", 1).isdigit()
     ]
-    logging.warning(str(values))
     if values:
         mean_value = sum(values) / len(values)
         return mean_value
@@ -348,7 +347,7 @@ def get_numRecordsOut(framework: utils.Utils.Framework, application: str):
         return value
     except Exception as e:
         logging.error(f"Error, when getting numRecordsOut from prometheus: {e}")
-        return None
+        return 0
 
 
 # return dict{"input_rate_records_per_second": x}
