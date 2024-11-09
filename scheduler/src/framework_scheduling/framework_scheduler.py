@@ -36,25 +36,27 @@ class FrameworkScheduler:
         try:
             self.consumer.close()
             self.producer.close()
-            if self.framework_is_running:
-                if self.framework_used == utils.Utils.Framework.SF:
-                    path_manifest_flink_session_cluster = (
-                        "/app/config_frameworks/flink-session-cluster-deployment.yaml"
-                    )
-                    manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
-                        path_manifest_flink_session_cluster
-                    )
-                    framework_scheduling.kubernetes_service.terminate_serverful_framework(
-                        manifest_docs_flink_session_cluster
-                    )
-                else:
-                    framework_scheduling.kubernetes_service.terminate_serverless_framework()
+
+            if self.framework_used == utils.Utils.Framework.SF:
+                path_manifest_flink_session_cluster = (
+                    "/app/config_frameworks/flink-session-cluster-deployment.yaml"
+                )
+                manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
+                    path_manifest_flink_session_cluster
+                )
+                framework_scheduling.kubernetes_service.terminate_serverful_framework(
+                    manifest_docs_flink_session_cluster
+                )
+            else:
+                framework_scheduling.kubernetes_service.terminate_serverless_framework()
         except Exception as e:
             logging.error(f"Cleanup error: {e}")
             raise e
 
     def main_run(self, manifest_docs, application, dataset, mongodb):
-        setup_successful = self.main_loop_setup(manifest_docs, application, dataset, mongodb)
+        setup_successful = self.main_loop_setup(
+            manifest_docs, application, dataset, mongodb
+        )
         if not setup_successful:
             logging.error("Exiting main_run")
             return
@@ -85,6 +87,7 @@ class FrameworkScheduler:
                 )
                 number_messages_sent = 0
                 self.framework_is_running = True
+                logging.warning("Framework_sched: " + str(self.framework_used))
                 self.evaluation_event.clear()
 
     def main_loop_setup(self, manifest_docs, application, dataset, mongodb):
