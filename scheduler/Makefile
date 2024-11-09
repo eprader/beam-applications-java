@@ -14,8 +14,15 @@ logs:
 	kubectl logs -l app=scheduler -f
 #--limit-bytes=500000
 
-docker:
+build:
 	docker build . -t scheduler
+
+tag:
 	docker tag scheduler:latest jungerindy/scheduler:latest
+
+push:	
 	docker push jungerindy/scheduler:latest
+
+docker:
+	make build tag push
 
