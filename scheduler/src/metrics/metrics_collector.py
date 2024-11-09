@@ -5,6 +5,13 @@ import utils.Utils
 from kafka import KafkaConsumer
 
 
+kafka_consumer = KafkaConsumer(
+    "pred-publish",
+    bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+    group_id="scheduler-metric-consumer",
+)
+
+
 def read_metric_from_prometheus(metric_name):
     prometheus_url = "http://prometheus-operated.default.svc.cluster.local:9090"
     try:
@@ -146,7 +153,6 @@ def filter_critical_values_sl(response):
         {"task_name": result["metric"]["task_name"], "value": result["value"][1]}
         for result in filtered_metrics
     ]
-
     return extracted_data
 
 
@@ -294,22 +300,18 @@ def get_objectives_for_sl(application):
 
 def get_latest_latency_value_sl():
     try:
-        kafka_consumer = KafkaConsumer(
-            "pred-publish",
-            bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
-            group_id="scheduler-metric-consumer",
-        )
-        message = next(kafka_consumer.poll(timeout_ms=1000).values())
+        message = kafka_consumer.poll(timeout_ms=5000)
         if message:
-            message_value = json.loads(message[0].value.decode("utf-8"))
-            logging.info(f"Latest message from 'pred-publish': {message_value}")
-            return message_value
-        else:
+            for partition, messages in message.items():
+                for msg in messages:
+                    message_value = json.loads(msg.value.decode("utf-8"))
+                    logging.warning(
+                        f"Latest message from 'pred-publish': {message_value}"
+                    )
+                    return message_value
             logging.warning("No new messages in 'pred-publish' topic.")
-            return None
-    except StopIteration:
-        logging.warning("No new messages in 'pred-publish' topic.")
         return None
+
     except Exception as e:
         logging.error(f"Error fetching message from Kafka: {e}")
         return None
