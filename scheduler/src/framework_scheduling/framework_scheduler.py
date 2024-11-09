@@ -113,7 +113,7 @@ class FrameworkScheduler:
                         self.producer.send(
                             serverful_topic,
                             key=struct.pack(">Q", int(time.time() * 1000)),
-                            value=msg.decode().encode("utf-8"),
+                            value=msg.value.decode().encode("utf-8"),
                         )
                         number_messages_sent = number_messages_sent + 1
                         logging.info(
@@ -123,7 +123,7 @@ class FrameworkScheduler:
                         self.producer.send(
                             "statefun-starter-input",
                             key=str(int(time.time() * 1000)).encode("utf-8"),
-                            value=msg.decode(),
+                            value=msg.value.decode(),
                         )
                         number_messages_sent = number_messages_sent + 1
 
