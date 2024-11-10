@@ -66,11 +66,16 @@ def check_load_prediction_data(data, window_size: int):
         return False
 
 
-def run_evaluation(current_framework: utils.Utils.Framework, window_size: int):
+def run_evaluation(
+    current_framework: utils.Utils.Framework, window_size: int, debug_flag=False
+):
     """
     Return either SL or SF
     Add latency penalty to not running framework
     """
+    if debug_flag:
+        return utils.Utils.get_opposite_framework(current_framework)
+
     test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     history = database.database_access.retrieve_input_rates_current_data()
     if not check_load_prediction_data(history, window_size):
