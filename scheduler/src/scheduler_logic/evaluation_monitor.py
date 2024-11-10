@@ -41,11 +41,12 @@ class EvaluationMonitor:
         periodic_checks = self.interval_seconds / self.sleep_interval
         while not self.framework_running_event.is_set():
             time.sleep(30)
+        flag = True
         while True:
-            self.monitor_iteration(periodic_checks)
+            flag = self.monitor_iteration(periodic_checks, flag)
             time.sleep(self.sleep_interval)
 
-    def monitor_iteration(self, periodic_checks):
+    def monitor_iteration(self, periodic_checks, debug_flag=False):
         timeout_counter = self.timeout_counter
         periodic_counter = self.periodic_counter
         collected_metrics = self.collect_metrics()
@@ -54,7 +55,7 @@ class EvaluationMonitor:
         )
         if collected_metrics[0] is None or len(input_rate_dict) == 0:
             logging.warning("Collected objectives are None")
-            return
+            return debug_flag
 
         database.database_access.store_scheduler_metrics(
             datetime.now(),
@@ -68,11 +69,15 @@ class EvaluationMonitor:
         logging.warning("Safety net metrics " + str(collected_metrics[1]))
         if self.check_for_safety_net(collected_metrics[1]) and timeout_counter == 0:
             logging.warning("Safety net triggered")
-            if self.evaluate_and_act():
+            if self.evaluate_and_act(debug_flag):
+                logging.warning("Triggered evaluation critical")
+                debug_flag = False
                 timeout_counter = self.timeout_duration_sec / self.sleep_interval
         elif periodic_counter >= periodic_checks and timeout_counter == 0:
             logging.warning("Periodical check-up")
-            if self.evaluate_and_act():
+            if self.evaluate_and_act(debug_flag):
+                logging.warning("Triggered evaluation periodic")
+                debug_flag = False
                 timeout_counter = self.timeout_duration_sec / self.sleep_interval
                 periodic_counter = 0
             else:
@@ -85,6 +90,7 @@ class EvaluationMonitor:
 
         self.timeout_counter = timeout_counter
         self.periodic_counter = periodic_counter
+        return debug_flag
 
     def check_for_safety_net(self, metrics_dic: dict):
         try:
@@ -128,10 +134,11 @@ class EvaluationMonitor:
             logging.error(f"Failed to collect metrics: {e}")
             return None, None
 
-    def evaluate_and_act(self):
+    def evaluate_and_act(self, debug_flag=False):
         decision = scheduler_logic.scheduler_logic.run_evaluation(
-            self.running_framework, self.window_size_dtw
+            self.running_framework, self.window_size_dtw, debug_flag
         )
+        logging.warning("Dec: " + str(decision))
         if decision != self.running_framework:
             self.handle_switch(decision)
             return True
@@ -142,5 +149,6 @@ class EvaluationMonitor:
         self.evaluation_event.set()
         while self.evaluation_event.is_set():
             time.sleep(30)
-            logging.info("Waiting for event to unset")
+            logging.warning("Waiting for event to unset")
         self.running_framework = decision
+        logging.warning("Handle switch is done")
