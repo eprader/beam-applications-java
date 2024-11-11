@@ -303,7 +303,7 @@ def get_objectives_for_sl(application):
         logging.error("Error, when getting objectives_sl " + str(e))
         return None
 
-
+#return number as float
 def get_latest_latency_value_sl():
     try:
         kafka_consumer = get_kafka_consumer()
@@ -315,11 +315,12 @@ def get_latest_latency_value_sl():
         if message:
             for partition, messages in message.items():
                 for msg in messages:
-                    message_value = json.loads(msg.value.decode("utf-8"))
+                    message_value = msg.value.decode("utf-8")
                     logging.warning(
                         f"Latest message from 'pred-publish': {message_value}"
                     )
-                    return message_value
+                    message_parts = message_value.split(",")
+                    return float(message_parts[1])
             logging.warning("No new messages in 'pred-publish' topic.")
         return None
 
