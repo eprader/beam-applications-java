@@ -5,6 +5,7 @@ import threading
 import time
 import logging
 import utils.Utils
+import timeseriesPredictor.LoadPredictor
 from datetime import datetime
 
 
@@ -36,12 +37,13 @@ class EvaluationMonitor:
         self.threshold_dict_sf = threshold_dict_sf
         self.threshold_dict_sl = threshold_dict_sl
         self.window_size_dtw = window_size_dtw
+        self.arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
 
     def start_monitoring(self):
         periodic_checks = self.interval_seconds / self.sleep_interval
         while not self.framework_running_event.is_set():
             time.sleep(30)
-        flag = True
+        flag = False
         while True:
             flag = self.monitor_iteration(periodic_checks, flag)
             time.sleep(self.sleep_interval)
@@ -136,7 +138,7 @@ class EvaluationMonitor:
 
     def evaluate_and_act(self, debug_flag=False):
         decision = scheduler_logic.scheduler_logic.run_evaluation(
-            self.running_framework, self.window_size_dtw, debug_flag
+            self.running_framework, self.window_size_dtw, self.arima_instance,debug_flag
         )
         logging.warning("Dec: " + str(decision))
         if decision != self.running_framework:
