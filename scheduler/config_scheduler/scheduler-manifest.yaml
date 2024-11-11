@@ -17,10 +17,10 @@ spec:
       serviceAccountName: service-creator-account
       containers:
       - name: scheduler
-        #image: jungerindy/scheduler:latest
-        image: scheduler-image:latest
-        imagePullPolicy: IfNotPresent
-        #imagePullPolicy: Always
+        image: jungerindy/scheduler:latest
+        #image: scheduler-image:latest
+        #imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: APPLICATION
           value: "PRED"
