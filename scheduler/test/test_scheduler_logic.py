@@ -13,6 +13,7 @@ from scheduler_logic.scheduler_logic import (
 import numpy as np
 from unittest.mock import patch
 import datetime
+import timeseriesPredictor.LoadPredictor
 import utils.Utils
 
 
@@ -251,18 +252,64 @@ historic_sf_data = [
 ]
 
 input_rate_return_data = [
-    {"input_rate_records_per_second": 505.0},
-    {"input_rate_records_per_second": 495.0},
-    {"input_rate_records_per_second": 500.0},
-    {"input_rate_records_per_second": 510.0},
-    {"input_rate_records_per_second": 495.0},
-    {"input_rate_records_per_second": 505.0},
-    {"input_rate_records_per_second": 498.0},
-    {"input_rate_records_per_second": 502.0},
-    {"input_rate_records_per_second": 497.0},
-    {"input_rate_records_per_second": 503.0},
-    {"input_rate_records_per_second": 499.0},
-    {"input_rate_records_per_second": 501.0},
+    {
+        "input_rate_records_per_second": 505.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 0, 0),
+    },
+    {
+        "input_rate_records_per_second": 495.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 1, 0),
+    },
+    {
+        "input_rate_records_per_second": 500.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 2, 0),
+    },
+    {
+        "input_rate_records_per_second": 510.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 3, 0),
+    },
+    {
+        "input_rate_records_per_second": 495.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 4, 0),
+    },
+    {
+        "input_rate_records_per_second": 505.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 5, 0),
+    },
+    {
+        "input_rate_records_per_second": 498.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 6, 0),
+    },
+    {
+        "input_rate_records_per_second": 502.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 7, 0),
+    },
+    {
+        "input_rate_records_per_second": 497.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 8, 0),
+    },
+    {
+        "input_rate_records_per_second": 503.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 9, 0),
+    },
+    {
+        "input_rate_records_per_second": 499.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 10, 0),
+    },
+    {
+        "input_rate_records_per_second": 501.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 11, 0),
+    },
+]
+input_rate_return_data_2 = [
+    {
+        "input_rate_records_per_second": 501.0,
+        "timestamp": datetime.datetime(2024, 11, 10, 10, 11, 0),
+    },
+    {
+        "input_rate_records_per_second": 501.0,
+        "timestamp": datetime.datetime(2024, 12, 10, 10, 11, 0),
+    },
 ]
 
 
@@ -282,24 +329,35 @@ def test_run_evaluation_starting_with_sf(
 
     mock_retrieve_historic.side_effect = side_effect_function
 
+    arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     current_framework = utils.Utils.Framework.SF
     window_size = 5
-    result = run_evaluation(current_framework, window_size)
-    assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    result = run_evaluation(current_framework, window_size, arima_instance)
+
     mock_retrieve_input_rates.assert_called_once()
     mock_store_decision.assert_called_once()
-
     store_decision_args = mock_store_decision.call_args
-    #print("store_decision arguments:", store_decision_args)
+
+    assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    assert arima_instance.is_model_set == True
+    assert arima_instance.last_update_timestamp == datetime.datetime(
+        2024, 11, 10, 10, 11, 0
+    )
+    # print("store_decision arguments:", store_decision_args)
 
 
 @patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
+@patch("database.database_access.retrieve_input_rates_after", autospec=True)
 @patch("database.database_access.store_decision_in_db", autospec=True)
 @patch("database.database_access.retrieve_historic_data", autospec=True)
 def test_run_evaluation_starting_with_sl(
-    mock_retrieve_historic, mock_store_decision, mock_retrieve_input_rates
+    mock_retrieve_historic,
+    mock_store_decision,
+    mock_retrieve_input_rates_after,
+    mock_retrieve_input_rates,
 ):
     mock_retrieve_input_rates.return_value = input_rate_return_data
+    mock_retrieve_input_rates_after.return_value = input_rate_return_data_2
 
     def side_effect_function(framework):
         if framework == "SL":
@@ -309,15 +367,30 @@ def test_run_evaluation_starting_with_sl(
 
     mock_retrieve_historic.side_effect = side_effect_function
 
-    current_framework =  utils.Utils.Framework.SL
+    current_framework = utils.Utils.Framework.SL
     window_size = 5
-    result = run_evaluation(current_framework, window_size)
+    arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
+    result = run_evaluation(current_framework, window_size, arima_instance)
+
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    assert arima_instance.is_model_set == True
+    assert arima_instance.last_update_timestamp == datetime.datetime(
+        2024, 11, 10, 10, 11, 0
+    )
     mock_retrieve_input_rates.assert_called_once()
     mock_store_decision.assert_called_once()
-
+    mock_retrieve_historic.call_count == 2
     store_decision_args = mock_store_decision.call_args
-    #print("store_decision arguments:", store_decision_args)
+    # print("store_decision arguments:", store_decision_args)
+
+    result_2 = run_evaluation(current_framework, window_size, arima_instance)
+
+    mock_retrieve_input_rates_after.assert_called_once()
+    assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    assert arima_instance.is_model_set == True
+    assert arima_instance.last_update_timestamp == datetime.datetime(
+        2024, 12, 10, 10, 11, 0
+    )
 
 
 def test_compute_entropy():

@@ -33,8 +33,10 @@ def mock_framework_scheduler():
     ) as mock_make_change:
 
         mock_consumer_instance = MockConsumer.return_value
+        mock_message = MagicMock()
+        mock_message.value = b"test message"
         mock_consumer_instance.poll = MagicMock(
-            return_value={"partition": [b"test message"]}
+            return_value={"partition": [mock_message]}
         )
 
         mock_producer_instance = MockProducer.return_value
@@ -196,6 +198,6 @@ def test_main_loop_logic_serverless(mock_framework_scheduler):
     serverful_topic = "senml-cleaned"
     number_sent_messages = 0
     scheduler.framework_used = utils.Utils.Framework.SL
-    ret_value =scheduler.main_loop_logic(serverful_topic, number_sent_messages)
+    ret_value = scheduler.main_loop_logic(serverful_topic, number_sent_messages)
     assert ret_value == 1
     scheduler.producer.send.assert_called_once()

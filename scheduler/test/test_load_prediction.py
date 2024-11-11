@@ -1,4 +1,5 @@
 import pytest
+import datetime
 import pandas as pd
 from timeseriesPredictor.LoadPredictor import LoadPredictor
 
@@ -176,29 +177,64 @@ def sample_data():
     return data
 
 
+@pytest.fixture
+def predictor():
+    return LoadPredictor()
+
+
 @pytest.mark.skip(reason="SARIMAX method have been removed")
-def test_load_predictor_model_creation_SARIMAX(sample_data):
-    predictor = LoadPredictor()
+def test_load_predictor_model_creation_SARIMAX(predictor, sample_data):
     model = predictor.make_model_sarimax(sample_data)
     assert model is not None, "SARIMAX model creation failed."
 
 
 @pytest.mark.skip(reason="SARIMAX method have been removed")
-def test_load_predictor_predictions_SARIMAX(sample_data):
-    predictor = LoadPredictor()
+def test_load_predictor_predictions_SARIMAX(predictor, sample_data):
     model = predictor.make_model_sarimax(sample_data)
     predictions = predictor.make_predictions_sarimax(model, forecast_periods=5)
     assert len(predictions) == 5, "Prediction generation failed; expected 5 values."
 
 
-def test_load_predictor_model_creation_ARIMA(sample_data):
-    predictor = LoadPredictor()
+def test_load_predictor_model_creation_ARIMA(predictor, sample_data):
     model = predictor.make_model_arima(sample_data)
     assert model is not None, "SARIMAX model creation failed."
 
 
-def test_load_predictor_predictions_ARIMA(sample_data):
-    predictor = LoadPredictor()
+def test_load_predictor_predictions_ARIMA(predictor, sample_data):
     model = predictor.make_model_arima(sample_data)
     predictions = predictor.make_predictions_arima(5)
     assert len(predictions) == 5, "Prediction generation failed; expected 5 values."
+
+
+def test_load_predictor_model_creation_auto_arima(predictor, sample_data):
+    assert predictor.make_model_auto_arima(
+        sample_data
+    ), "auto_arima model creation failed."
+    assert (
+        predictor.is_model_set
+    ), "Model was not set properly after auto_arima creation."
+
+
+def test_load_predictor_predictions_auto_arima(predictor, sample_data):
+    predictor.make_model_auto_arima(sample_data)
+    predictions = predictor.make_predictions_auto_arima(5)
+    assert len(predictions) == 5, "Prediction generation failed; expected 5 values."
+
+
+def test_load_predictor_update_auto_arima(predictor, sample_data):
+    predictor.make_model_auto_arima(sample_data)
+    assert predictor.update_auto_arima(
+        [505, 495, 500]
+    ), "Updating auto_arima model failed."
+
+
+def test_last_update_timestamp_setter_getter(predictor):
+    timestamp = datetime.datetime(2024, 11, 20)
+    predictor.last_update_timestamp = timestamp
+    assert (
+        predictor.last_update_timestamp == timestamp
+    ), "Getter/Setter for last_update_timestamp failed."
+    with pytest.raises(
+        ValueError, match="last_update_timestamp must be a datetime object or None"
+    ):
+        predictor.last_update_timestamp = "InvalidType"
