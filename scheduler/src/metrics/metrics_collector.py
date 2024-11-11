@@ -2,14 +2,21 @@ import logging
 import requests
 import json
 import utils.Utils
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, TopicPartition
 
 
-kafka_consumer = KafkaConsumer(
-    "pred-publish",
-    bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
-    group_id="scheduler-metric-consumer",
-)
+_kafka_consumer_instance = None
+
+
+def get_kafka_consumer():
+    global _kafka_consumer_instance
+    if _kafka_consumer_instance is None:
+        _kafka_consumer_instance = KafkaConsumer(
+            "pred-publish",
+            bootstrap_servers=["kafka-cluster-kafka-bootstrap.default.svc:9092"],
+            group_id="scheduler-metric-consumer",
+        )
+    return _kafka_consumer_instance
 
 
 def read_metric_from_prometheus(metric_name):
@@ -299,6 +306,11 @@ def get_objectives_for_sl(application):
 
 def get_latest_latency_value_sl():
     try:
+        kafka_consumer = get_kafka_consumer()
+        kafka_consumer.poll(1000)
+
+        for partition in kafka_consumer.assignment():
+            kafka_consumer.seek_to_end(partition)
         message = kafka_consumer.poll(timeout_ms=5000)
         if message:
             for partition, messages in message.items():
