@@ -67,7 +67,10 @@ def check_load_prediction_data(data, window_size: int):
 
 
 def run_evaluation(
-    current_framework: utils.Utils.Framework, window_size: int, debug_flag=False
+    current_framework: utils.Utils.Framework,
+    window_size: int,
+    arima_instance: timeseriesPredictor.LoadPredictor.LoadPredictor,
+    debug_flag=False,
 ):
     """
     Return either SL or SF
@@ -76,19 +79,39 @@ def run_evaluation(
     if debug_flag:
         return utils.Utils.get_opposite_framework(current_framework)
 
-    test_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
-    history = database.database_access.retrieve_input_rates_current_data()
-    if not check_load_prediction_data(history, window_size):
-        logging.warning("input data for ARIMA too small")
-        return current_framework
+    if not arima_instance.is_model_set:
+        logging.warning("ARIMA model was not set")
+        history = database.database_access.retrieve_input_rates_current_data()
+        if not check_load_prediction_data(history, window_size):
+            logging.warning("input data for ARIMA too small")
+            return current_framework
+        values_list = [entry["input_rate_records_per_second"] for entry in history]
+        highest_date = max(
+            entry["timestamp"] for entry in history if "timestamp" in entry
+        )
+        is_arima_created = arima_instance.make_model_auto_arima(values_list)
+        arima_instance.last_update_timestamp = highest_date
+        if not is_arima_created:
+            logging.error("Error when creating ARIMA model")
+            return current_framework
+    else:
+        history = database.database_access.retrieve_input_rates_after(
+            arima_instance.last_update_timestamp
+        )
+        if len(history) == 0:
+            logging.warning("No new update available")
+        else:
+            values_list = [entry["input_rate_records_per_second"] for entry in history]
+            highest_date = max(
+                entry["timestamp"] for entry in history if "timestamp" in entry
+            )
+            arima_instance.last_update_timestamp = highest_date
+            is_arima_updated = arima_instance.update_auto_arima(values_list)
+            if not is_arima_updated:
+                logging.error("Error when updating ARIMA model")
+                return current_framework
 
-    values_list = [entry["input_rate_records_per_second"] for entry in history]
-    is_arima_created = test_instance.make_model_arima(values_list)
-    if not is_arima_created:
-        logging.error("Error when creating ARIMA model")
-        return current_framework
-
-    predictions = test_instance.make_predictions_arima(window_size)
+    predictions = arima_instance.make_predictions_auto_arima(window_size)
     if len(predictions) != window_size:
         logging.error("Error when making predictions with ARIMA model")
         return current_framework
