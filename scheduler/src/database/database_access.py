@@ -293,6 +293,25 @@ def retrieve_decisions():
     except mysql.connector.Error as err:
         logging.error(f"Error fetching data: {err}")
         return None
+    
+
+def retrieve_input_rates_after(timestamp):
+    try:
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor(dictionary=True)
+        query = """
+        SELECT id, timestamp, used_framework, u_sf, u_sl 
+        FROM framework_start_times
+        WHERE timestamp > %s
+        """
+        cursor.execute(query, (timestamp,))
+        
+        results = cursor.fetchall()
+        logging.warning(f"Retrieved {len(results)} entries after {timestamp}")
+        return results
+    except Exception as e:
+        logging.error(f"Error retrieving entries after {timestamp}: {e}")
+        return []
 
 
 def delete_tables():
