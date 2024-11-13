@@ -77,8 +77,7 @@ if __name__ == "__main__":
             target=evaluation_monitor.start_monitoring, name="MetricsMonitorThread"
         )
 
-        # FIXME debug flag
-        database.database_access.init_database(True)
+        database.database_access.init_database()
 
         scheduler_thread.start()
         monitor_thread.start()
