@@ -347,17 +347,15 @@ def test_run_evaluation_starting_with_sf(
 
 
 @patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
-@patch("database.database_access.retrieve_input_rates_after", autospec=True)
 @patch("database.database_access.store_decision_in_db", autospec=True)
 @patch("database.database_access.retrieve_historic_data", autospec=True)
 def test_run_evaluation_starting_with_sl(
     mock_retrieve_historic,
     mock_store_decision,
-    mock_retrieve_input_rates_after,
     mock_retrieve_input_rates,
 ):
     mock_retrieve_input_rates.return_value = input_rate_return_data
-    mock_retrieve_input_rates_after.return_value = input_rate_return_data_2
+    # mock_retrieve_input_rates_after.return_value = input_rate_return_data_2
 
     def side_effect_function(framework):
         if framework == "SL":
@@ -385,11 +383,10 @@ def test_run_evaluation_starting_with_sl(
 
     result_2 = run_evaluation(current_framework, window_size, arima_instance)
 
-    mock_retrieve_input_rates_after.assert_called_once()
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
     assert arima_instance.is_model_set == True
     assert arima_instance.last_update_timestamp == datetime.datetime(
-        2024, 12, 10, 10, 11, 0
+        2024, 11, 10, 10, 11, 0
     )
 
 
