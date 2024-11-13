@@ -105,8 +105,6 @@ class FrameworkScheduler:
             logging.error("Error, when setting up main loop", e)
             return False
 
-    # FIXME: Check if from the KafkaProducer a byte or a string arrives as messages
-    # this is important for the value in the producer
     def main_loop_logic(self, serverful_topic, number_messages_sent):
         message = self.consumer.poll(timeout_ms=5000)
         if message:
