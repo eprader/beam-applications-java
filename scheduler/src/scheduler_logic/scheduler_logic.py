@@ -95,7 +95,7 @@ def run_evaluation(
             logging.error("Error when creating ARIMA model")
             return current_framework
     else:
-        history = database.database_access.retrieve_input_rates_after(
+        history = database.database_access.retrieve_input_rates_current_data(
             arima_instance.last_update_timestamp
         )
         if len(history) == 0:
