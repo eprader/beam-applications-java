@@ -262,17 +262,23 @@ def retrieve_input_rates_current_data(since_timestamp=None):
         cursor = conn.cursor(dictionary=True)
         if since_timestamp:
             query = """
-        SELECT input_rate_records_per_second 
-        FROM scheduler_metrics
-        WHERE timestamp >= %s 
-        ORDER BY timestamp ASC"""
+            SELECT input_rate_records_per_second 
+            FROM scheduler_metrics
+            WHERE timestamp >= %s 
+            AND input_rate_records_per_second IS NOT NULL
+            ORDER BY timestamp ASC
+            """
+            cursor.execute(query, (since_timestamp,))
+
         else:
             query = """
             SELECT input_rate_records_per_second 
             FROM scheduler_metrics
+            WHERE input_rate_records_per_second IS NOT NULL
             ORDER BY timestamp ASC
             """
-        cursor.execute(query)
+            cursor.execute(query)
+
         result = cursor.fetchall()
         return result
     except mysql.connector.Error as err:
@@ -293,25 +299,6 @@ def retrieve_decisions():
     except mysql.connector.Error as err:
         logging.error(f"Error fetching data: {err}")
         return None
-    
-
-def retrieve_input_rates_after(timestamp):
-    try:
-        conn = mysql.connector.connect(**db_config, database=db_name)
-        cursor = conn.cursor(dictionary=True)
-        query = """
-        SELECT id, timestamp, used_framework, u_sf, u_sl 
-        FROM framework_start_times
-        WHERE timestamp > %s
-        """
-        cursor.execute(query, (timestamp,))
-        
-        results = cursor.fetchall()
-        logging.warning(f"Retrieved {len(results)} entries after {timestamp}")
-        return results
-    except Exception as e:
-        logging.error(f"Error retrieving entries after {timestamp}: {e}")
-        return []
 
 
 def delete_tables():
