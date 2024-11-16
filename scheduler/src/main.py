@@ -45,7 +45,7 @@ if __name__ == "__main__":
         # User settings
         start_framework = utils.Utils.Framework.SF
         window_size_dtw = 10
-        threshold_dict_sf = {"idleTime": 900, "busyTime": 100}
+        threshold_dict_sf = {"idleTime": 850, "busyTime": 100}
         threshold_dict_sl = {"busyTime": 800, "backPressuredTime": 800}
 
         framework_running_event = threading.Event()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             target=evaluation_monitor.start_monitoring, name="MetricsMonitorThread"
         )
 
-        database.database_access.init_database()
+        database.database_access.init_database(True)
 
         scheduler_thread.start()
         monitor_thread.start()
