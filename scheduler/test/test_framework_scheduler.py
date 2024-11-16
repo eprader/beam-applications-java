@@ -87,7 +87,7 @@ def test_framework_scheduler_cleanup_SF(mock_framework_scheduler):
     scheduler.producer.close.assert_called_once()
     mock_read_manifest.assert_called_once()
     mock_terminate_serverful.assert_called_once()
-    mock_terminate_serverless.assert_not_called()
+    mock_terminate_serverless.assert_called_once()
 
 
 def test_framework_scheduler_cleanup_SL(mock_framework_scheduler):
@@ -107,8 +107,8 @@ def test_framework_scheduler_cleanup_SL(mock_framework_scheduler):
     scheduler.cleanup()
     scheduler.consumer.close.assert_called_once()
     scheduler.producer.close.assert_called_once()
-    mock_read_manifest.assert_not_called()
-    mock_terminate_serverful.assert_not_called()
+    mock_read_manifest.assert_called_once()
+    mock_terminate_serverful.assert_called_once()
     mock_terminate_serverless.assert_called_once()
 
 
