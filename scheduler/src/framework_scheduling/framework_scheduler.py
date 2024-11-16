@@ -8,6 +8,8 @@ from kubernetes.stream import portforward
 import framework_scheduling.kubernetes_service
 from threading import Event
 import utils.Utils
+import database.database_access
+import datetime
 
 
 class FrameworkScheduler:
@@ -33,25 +35,35 @@ class FrameworkScheduler:
         self.framework_is_running = False
 
     def cleanup(self):
+        errors = []
         try:
             self.consumer.close()
             self.producer.close()
-
-            if self.framework_used == utils.Utils.Framework.SF:
-                path_manifest_flink_session_cluster = (
-                    "/app/config_frameworks/flink-session-cluster-deployment.yaml"
-                )
-                manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
-                    path_manifest_flink_session_cluster
-                )
-                framework_scheduling.kubernetes_service.terminate_serverful_framework(
-                    manifest_docs_flink_session_cluster
-                )
-            else:
-                framework_scheduling.kubernetes_service.terminate_serverless_framework()
         except Exception as e:
             logging.error(f"Cleanup error: {e}")
-            raise e
+            errors.append(e)
+
+        try:
+            path_manifest_flink_session_cluster = (
+                "/app/config_frameworks/flink-session-cluster-deployment.yaml"
+            )
+            manifest_docs_flink_session_cluster = utils.Utils.read_manifest(
+                path_manifest_flink_session_cluster
+            )
+            framework_scheduling.kubernetes_service.terminate_serverful_framework(
+                manifest_docs_flink_session_cluster
+            )
+        except Exception as e:
+            logging.error(f"Cleanup error: {e}")
+            errors.append(e)
+        try:
+            framework_scheduling.kubernetes_service.terminate_serverless_framework()
+        except Exception as e:
+            logging.error(f"Cleanup error: {e}")
+            errors.append(e)
+
+        if errors:
+            raise Exception(f"Cleanup encountered errors: {errors}")
 
     def main_run(self, manifest_docs, application, dataset, mongodb):
         setup_successful = self.main_loop_setup(
@@ -81,6 +93,14 @@ class FrameworkScheduler:
                     manifest_docs,
                     mongodb,
                     dataset,
+                )
+                logging.warning(
+                    "Process message before change: " + str(number_messages_sent)
+                )
+                database.database_access.store_processed_records_in_database(
+                    datetime.datetime.now(),
+                    number_messages_sent,
+                    self.framework_used.name,
                 )
                 self.framework_used = utils.Utils.get_opposite_framework(
                     self.framework_used

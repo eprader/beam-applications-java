@@ -42,9 +42,11 @@ def create_framework_start_times_table(cursor):
     CREATE TABLE IF NOT EXISTS {start_times_table_name} (
         id INT AUTO_INCREMENT PRIMARY KEY,
         timestamp DATETIME NOT NULL,
+        framework_before ENUM('SF', 'SL') NOT NULL,
         used_framework ENUM('SF', 'SL') NOT NULL,
         u_sf FLOAT,
-        u_sl FLOAT
+        u_sl FLOAT,
+        going_to_switch BOOLEAN NOT NULL
     )
     """
     cursor.execute(create_start_times_table_query)
@@ -80,6 +82,20 @@ def create_historic_metrics_table(cursor):
     logging.info(f"Table '{table_name}' checked/created.")
 
 
+def create_records_processed_table(cursor):
+    table_name = "processed_metrics"
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        timestamp DATETIME NOT NULL,
+        records FLOAT,
+        framework ENUM('SF', 'SL') NOT NULL
+    )
+    """
+    cursor.execute(create_table_query)
+    logging.info(f"Table '{table_name}' checked/created.")
+
+
 def init_database(debug_Flag=False):
     try:
         if debug_Flag:
@@ -92,6 +108,7 @@ def init_database(debug_Flag=False):
         create_framework_start_times_table(cursor)
         # create_model_storage_table(cursor)
         create_historic_metrics_table(cursor)
+        create_records_processed_table(cursor)
         logging.info("Database and table initialized successfully.")
 
     except Error as e:
@@ -136,21 +153,25 @@ def store_scheduler_metrics(
         conn.close()
 
 
-def store_decision_in_db(timestamp: datetime, decision_dict: dict):
+def store_decision_in_db(
+    timestamp: datetime, decision_dict: dict, going_to_switch=False
+):
     logging.warning("Decision: " + str(decision_dict))
     start_times_table_name = "framework_start_times"
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor()
         insert_query = f"""
-        INSERT INTO {start_times_table_name} (timestamp, used_framework, u_sf, u_sl)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO {start_times_table_name} (timestamp, framework_before, used_framework, u_sf, u_sl, going_to_switch)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """
         data = (
             timestamp,
+            decision_dict["framework_before"],
             decision_dict["used_framework"],
             decision_dict["u_sf"],
             decision_dict["u_sl"],
+            going_to_switch,
         )
 
         cursor.execute(insert_query, data)
@@ -218,6 +239,31 @@ def store_model_in_database(model_name, model_binary):
         conn.close()
 
 
+def store_processed_records_in_database(date, records, framework: str):
+    table_name = "processed_metrics"
+
+    try:
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor()
+        insert_query = f"""
+        INSERT INTO {table_name} (timestamp, records, framework)
+        VALUES (%s, %s, %s)
+        """
+        data = (date, records, framework)
+        cursor.execute(insert_query, data)
+
+        conn.commit()
+        logging.info(f"Record inserted into '{table_name}' successfully.")
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logging.error("Error when processed records to database")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def retrieve_single_model(model_name):
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
@@ -262,7 +308,7 @@ def retrieve_input_rates_current_data(since_timestamp=None):
         cursor = conn.cursor(dictionary=True)
         if since_timestamp:
             query = """
-            SELECT input_rate_records_per_second 
+            SELECT input_rate_records_per_second, timestamp 
             FROM scheduler_metrics
             WHERE timestamp >= %s 
             AND input_rate_records_per_second IS NOT NULL
@@ -272,7 +318,7 @@ def retrieve_input_rates_current_data(since_timestamp=None):
 
         else:
             query = """
-            SELECT input_rate_records_per_second 
+            SELECT input_rate_records_per_second, timestamp 
             FROM scheduler_metrics
             WHERE input_rate_records_per_second IS NOT NULL
             ORDER BY timestamp ASC
@@ -283,7 +329,7 @@ def retrieve_input_rates_current_data(since_timestamp=None):
         return result
     except mysql.connector.Error as err:
         logging.error(f"Error fetching data: {err}")
-        return None
+        return []
 
 
 # Returns: [{'id': 1, 'timestamp': datetime.datetime(2024, 11, 4, 19, 29, 55), 'used_framework': 'SL', 'u_sf': 0.9, 'u_sl': 0.2}, ..]
@@ -310,7 +356,7 @@ def delete_tables():
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor()
 
-        tables = ["scheduler_metrics", "framework_start_times", "historic_metrics"]
+        tables = ["scheduler_metrics", "framework_start_times", "processed_metrics"]
 
         for table_name in tables:
             drop_query = f"DROP TABLE IF EXISTS {table_name}"
