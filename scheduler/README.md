@@ -20,6 +20,8 @@ in the ``config_scheduler``-folder
 kubectl apply -f role.yaml
 kubectl apply -f rolebinding.yaml
 kubectl apply -f service-account.yaml
+kubectl apply -f cluster_role.yaml
+kubectl apply -f cluster_role_binding.yaml
 
 kubectl apply -f kafka-topic-scheduler-input.yaml
 kubectl apply -f kafka-topic-statefun-starter-input.yaml
