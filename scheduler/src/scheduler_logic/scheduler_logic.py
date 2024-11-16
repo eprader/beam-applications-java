@@ -46,9 +46,14 @@ def normalize_throughput(throughput):
 
 def check_historic_data_validity(historic_data, window_size: int):
     try:
+        if historic_data == None:
+            logging.error("historic is None")
+            return False
         if len(historic_data) == 0:
+            logging.error("historic is len 0")
             return False
         if len(historic_data) < window_size:
+            logging.error("historic is too small")
             return False
         return True
     except Exception as e:
@@ -58,7 +63,9 @@ def check_historic_data_validity(historic_data, window_size: int):
 
 def check_load_prediction_data(data, window_size: int):
     try:
-        if len(data) < window_size * 2:
+        if data == None:
+            return False
+        if len(data) < window_size / 2:
             return False
         return True
     except Exception as e:
@@ -86,9 +93,13 @@ def run_evaluation(
             logging.warning("input data for ARIMA too small")
             return current_framework
         values_list = [entry["input_rate_records_per_second"] for entry in history]
-        highest_date = max(
-            entry["timestamp"] for entry in history if "timestamp" in entry
-        )
+        try:
+            highest_date = max(
+                entry["timestamp"] for entry in history if "timestamp" in entry
+            )
+        except Exception as e:
+            logging.error("When finding max date")
+            raise e
         is_arima_created = arima_instance.make_model_auto_arima(values_list)
         arima_instance.last_update_timestamp = highest_date
         if not is_arima_created:
@@ -98,7 +109,7 @@ def run_evaluation(
         history = database.database_access.retrieve_input_rates_current_data(
             arima_instance.last_update_timestamp
         )
-        if len(history) == 0:
+        if history == None or len(history) == 0:
             logging.warning("No new update available")
         else:
             values_list = [entry["input_rate_records_per_second"] for entry in history]
@@ -174,11 +185,15 @@ def run_evaluation(
         u_score_mean_sf, u_score_mean_sl, current_framework
     )
     decision_dict = dict()
-    decision_dict["used_framework"] = decision
+    decision_dict["framework_before"] = current_framework.name
+    decision_dict["used_framework"] = decision.name
     decision_dict["u_sf"] = u_score_mean_sf
     decision_dict["u_sl"] = u_score_mean_sl
+    going_to_switch = False
+    if decision != current_framework:
+        going_to_switch = True
     database.database_access.store_decision_in_db(
-        datetime.datetime.now(), decision_dict
+        datetime.datetime.now(), decision_dict, going_to_switch
     )
 
     return decision
