@@ -9,6 +9,7 @@ from scheduler_logic.scheduler_logic import (
     compute_degree_of_divergence,
     calculate_weights_with_entropy,
     run_evaluation,
+    make_decision_based_on_score
 )
 import numpy as np
 from unittest.mock import patch
@@ -332,7 +333,7 @@ def test_run_evaluation_starting_with_sf(
     arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
     current_framework = utils.Utils.Framework.SF
     window_size = 5
-    result = run_evaluation(current_framework, window_size, arima_instance)
+    result = run_evaluation(current_framework, window_size, arima_instance, True)
 
     mock_retrieve_input_rates.assert_called_once()
     mock_store_decision.assert_called_once()
@@ -368,7 +369,7 @@ def test_run_evaluation_starting_with_sl(
     current_framework = utils.Utils.Framework.SL
     window_size = 5
     arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
-    result = run_evaluation(current_framework, window_size, arima_instance)
+    result = run_evaluation(current_framework, window_size, arima_instance, False)
 
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
     assert arima_instance.is_model_set == True
@@ -381,7 +382,7 @@ def test_run_evaluation_starting_with_sl(
     store_decision_args = mock_store_decision.call_args
     # print("store_decision arguments:", store_decision_args)
 
-    result_2 = run_evaluation(current_framework, window_size, arima_instance)
+    result_2 = run_evaluation(current_framework, window_size, arima_instance, False)
 
     assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
     assert arima_instance.is_model_set == True
@@ -437,3 +438,31 @@ def test_calculate_weights_with_entropy(mock_compute_divergence, mock_compute_en
 
     assert mock_compute_entropy.call_count == 3
     assert mock_compute_divergence.call_count == 3
+
+def test_make_decision_based_on_score():
+    u_mean_sf = 0.8
+    u_mean_sl = 0.79
+    current_framework = utils.Utils.Framework.SF
+    threshold = 0.05
+    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
+    assert result == current_framework, "Failed to keep the current framework when the difference is below the threshold"
+
+    u_mean_sf = 0.9
+    u_mean_sl = 0.75
+    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
+    assert result == utils.Utils.Framework.SF, "Failed to select SF when it has a higher score and the difference exceeds the threshold"
+
+    u_mean_sf = 0.7
+    u_mean_sl = 0.9
+    threshold = 0.3
+    current_framework = utils.Utils.Framework.SF
+    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
+    assert result == utils.Utils.Framework.SF, "Failed to select SL when it has a higher score and the difference exceeds the threshold"
+
+    u_mean_sf = 0.85
+    u_mean_sl = 0.85
+    threshold = 0
+    current_framework = utils.Utils.Framework.SL
+    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
+    assert result == current_framework, "Failed to keep the current framework when scores are equal"
+
