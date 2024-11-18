@@ -145,7 +145,8 @@ class EvaluationMonitor:
             self.running_framework,
             self.window_size_dtw,
             self.arima_instance,
-            debug_flag,
+            use_latency_penalty=False,
+            debug_flag=debug_flag,
         )
         logging.warning("Dec: " + str(decision))
         if decision != self.running_framework:

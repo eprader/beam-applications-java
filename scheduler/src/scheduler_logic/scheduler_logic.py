@@ -77,6 +77,7 @@ def run_evaluation(
     current_framework: utils.Utils.Framework,
     window_size: int,
     arima_instance: timeseriesPredictor.LoadPredictor.LoadPredictor,
+    use_latency_penalty,
     debug_flag=False,
 ):
     """
@@ -158,12 +159,16 @@ def run_evaluation(
     normalized_metrics_sf = [normalize_metrics(element) for element in best_window_sf]
     normalized_metrics_sl = [normalize_metrics(element) for element in best_window_sl]
 
-    if current_framework == utils.Utils.Framework.SL:
-        if "latency" in normalized_metrics_sf[-1]:
-            normalized_metrics_sf[-1]["latency"] += normalize_latency(10000)
+    threshold = 0
+    if use_latency_penalty:
+        if current_framework == utils.Utils.Framework.SL:
+            if "latency" in normalized_metrics_sf[-1]:
+                normalized_metrics_sf[-1]["latency"] += normalize_latency(10000)
+        else:
+            if "latency" in normalized_metrics_sl[-1]:
+                normalized_metrics_sl[-1]["latency"] += normalize_latency(10000)
     else:
-        if "latency" in normalized_metrics_sl[-1]:
-            normalized_metrics_sl[-1]["latency"] += normalize_latency(10000)
+        threshold = 0.0005
 
     normalized_mean_metrics_sf = calculate_normalized_mean(normalized_metrics_sf)
     normalized_mean_metrics_sl = calculate_normalized_mean(normalized_metrics_sl)
@@ -182,7 +187,7 @@ def run_evaluation(
     u_score_mean_sf = sum(u_score_list_sf) / len(u_score_list_sf)
     u_score_mean_sl = sum(u_score_list_sl) / len(u_score_list_sl)
     decision = make_decision_based_on_score(
-        u_score_mean_sf, u_score_mean_sl, current_framework
+        u_score_mean_sf, u_score_mean_sl, current_framework, threshold
     )
     decision_dict = dict()
     decision_dict["framework_before"] = current_framework.name
@@ -215,8 +220,14 @@ def make_decision_based_on_score(
     u_mean_sf: float,
     u_mean_sl: float,
     current_framework: utils.Utils.Framework,
-    threshold=None,
+    threshold,
 ):
+    difference = abs(u_mean_sf - u_mean_sl)
+    if difference < threshold:
+        logging.info(
+            f"Difference ({difference}) is less than the threshold ({threshold}). Keeping {current_framework}"
+        )
+        return current_framework
     if u_mean_sf > u_mean_sl:
         decision = utils.Utils.Framework.SF
 
