@@ -286,8 +286,29 @@ def retrieve_single_model(model_name):
         conn.close()
 
 
-# Returns [] | [{'id': 18, 'timestamp': datetime.datetime(2024, 11, 4, 19, 44, 17), 'latency': 85.4, 'cpu_load': 0.25, 'throughput': 320.0, 'input_rate_records_per_second': 180.5, 'framework': 'SL'}]
 def retrieve_historic_data(framework: str):
+    """
+    Retrieve historic data for a specific framework.
+
+    Args:
+        framework (str): The framework for which historic data is to be retrieved.
+
+    Returns:
+        list[dict] | None: A list of dictionaries containing historic data for the specified framework,
+        or None if an error occurs.
+        Example:
+            [
+                {
+                    'id': 18,
+                    'timestamp': datetime.datetime(2024, 11, 4, 19, 44, 17),
+                    'latency': 85.4,
+                    'cpu_load': 0.25,
+                    'throughput': 320.0,
+                    'input_rate_records_per_second': 180.5,
+                    'framework': 'SL'
+                }
+            ]
+    """
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor(dictionary=True)
@@ -301,8 +322,20 @@ def retrieve_historic_data(framework: str):
         return None
 
 
-# Expected output: list of dicts: [{'input_rate_records_per_second': 500.0}, ..]
 def retrieve_input_rates_current_data(since_timestamp=None):
+    """
+    Retrieve input rate records per second since a given timestamp.
+
+    Args:
+        since_timestamp (datetime | None): The starting timestamp to filter the records.
+        If None, retrieves all records.
+
+    Returns:
+        list[dict]: A list of dictionaries containing `input_rate_records_per_second` and `timestamp`.
+        Example:
+            [{'input_rate_records_per_second': 500.0, 'timestamp': datetime.datetime(2024, 11, 4, 19, 44, 17)}, ...]
+        If an error occurs, returns an empty list.
+    """
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor(dictionary=True)
@@ -332,8 +365,24 @@ def retrieve_input_rates_current_data(since_timestamp=None):
         return []
 
 
-# Returns: [{'id': 1, 'timestamp': datetime.datetime(2024, 11, 4, 19, 29, 55), 'used_framework': 'SL', 'u_sf': 0.9, 'u_sl': 0.2}, ..]
 def retrieve_decisions():
+    """
+    Retrieve decisions from the `framework_start_times` table.
+
+    Returns:
+        list[dict] | None: A list of dictionaries containing decision records,
+        or None if an error occurs.
+        Example:
+            [
+                {
+                    'id': 1,
+                    'timestamp': datetime.datetime(2024, 11, 4, 19, 29, 55),
+                    'used_framework': 'SL',
+                    'u_sf': 0.9,
+                    'u_sl': 0.2
+                },
+            ]
+    """
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor(dictionary=True)
