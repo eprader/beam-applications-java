@@ -21,17 +21,17 @@ class EvaluationMonitor:
         threshold_dict_sl: dict,
         window_size_dtw: int,
         periodic_checking_min=1,
-        timeout_duration_min=10,
-        sleep_interval_seconds=60 * 2,
+        timeout_duration_min=4,
+        sleep_interval_min=0.5,
     ) -> None:
-        self.interval_seconds = periodic_checking_min * 60
+        self.periodic_checking_seconds = periodic_checking_min * 60
         self.application = application
         self.dataset = dataset
         self.running_framework = running_framework
         self.evaluation_event = evaluation_event
         self.framework_running_event = framework_running_event
-        self.timeout_duration_sec = timeout_duration_min * 60
-        self.sleep_interval = sleep_interval_seconds
+        self.timeout_duration_seconds = timeout_duration_min * 60
+        self.sleep_interval_seconds = sleep_interval_min * 60
         self.timeout_counter = 0
         self.periodic_counter = 0
         self.threshold_dict_sf = threshold_dict_sf
@@ -40,13 +40,13 @@ class EvaluationMonitor:
         self.arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
 
     def start_monitoring(self):
-        periodic_checks = self.interval_seconds / self.sleep_interval
+        periodic_checks = self.periodic_checking_seconds / self.sleep_interval_seconds
         while not self.framework_running_event.is_set():
             time.sleep(30)
         flag = False
         while True:
             flag = self.monitor_iteration(periodic_checks, flag)
-            time.sleep(self.sleep_interval)
+            time.sleep(self.sleep_interval_seconds)
 
     def monitor_iteration(self, periodic_checks, debug_flag=False):
         timeout_counter = self.timeout_counter
@@ -74,13 +74,17 @@ class EvaluationMonitor:
             if self.evaluate_and_act(debug_flag):
                 logging.warning("Triggered evaluation critical")
                 debug_flag = False
-                timeout_counter = self.timeout_duration_sec / self.sleep_interval
+                timeout_counter = (
+                    self.timeout_duration_seconds / self.sleep_interval_seconds
+                )
         elif periodic_counter >= periodic_checks and timeout_counter == 0:
             logging.warning("Periodical check-up")
             if self.evaluate_and_act(debug_flag):
                 logging.warning("Triggered evaluation periodic")
                 debug_flag = False
-                timeout_counter = self.timeout_duration_sec / self.sleep_interval
+                timeout_counter = (
+                    self.timeout_duration_seconds / self.sleep_interval_seconds
+                )
                 periodic_counter = 0
             else:
                 periodic_counter = -1
@@ -138,7 +142,10 @@ class EvaluationMonitor:
 
     def evaluate_and_act(self, debug_flag=False):
         decision = scheduler_logic.scheduler_logic.run_evaluation(
-            self.running_framework, self.window_size_dtw, self.arima_instance,debug_flag
+            self.running_framework,
+            self.window_size_dtw,
+            self.arima_instance,
+            debug_flag,
         )
         logging.warning("Dec: " + str(decision))
         if decision != self.running_framework:
