@@ -44,7 +44,9 @@ if __name__ == "__main__":
         )
         # User settings
         start_framework = utils.Utils.Framework.SF
-        window_size_dtw = 10
+        window_size_dtw = int(os.getenv("WINDOW_SIZE", "10"))
+        logging.warning("Window_size: " + str(window_size_dtw))
+
         threshold_dict_sf = {"idleTime": 850, "busyTime": 100}
         threshold_dict_sl = {"busyTime": 800, "backPressuredTime": 800}
 
