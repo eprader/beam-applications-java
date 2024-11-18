@@ -108,12 +108,13 @@ public class MqttPublishFn implements StatefulFunction {
                                 .withCustomType(MQTT_PUBLISH_ENTRY_JSON_TYPE, mqttPublishEntry)
                                 .build());
                 if (mqttPublishEntry.getArrivalTime() != 0L) {
-                    long latency = System.currentTimeMillis() - mqttPublishEntry.getArrivalTime();
+                    long endTime = System.currentTimeMillis();
+                    long latency = endTime - mqttPublishEntry.getArrivalTime();
                     context.send(
                             KafkaEgressMessage.forEgress(KAFKA_EGRESS)
                                     .withTopic("pred-publish")
                                     .withUtf8Key(String.valueOf("latency"))
-                                    .withUtf8Value(String.valueOf(latency))
+                                    .withUtf8Value(String.valueOf(endTime) + "," + String.valueOf(latency))
                                     .build());
                 }
 
