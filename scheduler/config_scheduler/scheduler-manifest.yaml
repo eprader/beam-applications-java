@@ -33,7 +33,9 @@ spec:
         - name: MYSQL_ROOT_PASSWORD
           value: "password"
         - name: MYSQL_DATABASE
-          value: "schedulerdb"  
+          value: "schedulerdb" 
+        - name: WINDOW_SIZE
+          value: "10" 
         ports:
         - containerPort: 9093
         resources:
