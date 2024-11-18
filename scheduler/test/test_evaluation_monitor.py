@@ -23,7 +23,7 @@ def evaluation_monitor():
         window_size_dtw=5,
         periodic_checking_min=1,
         timeout_duration_min=5,
-        sleep_interval_seconds=30,
+        sleep_interval_min=0.5,
     )
 
 
@@ -172,7 +172,8 @@ def test_monitor_iteration_periodic_check_without_safety_net(
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(3):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
@@ -226,7 +227,8 @@ def test_monitor_iteration_periodic_check_with_safety_net(
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(3):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
@@ -280,7 +282,8 @@ def test_monitor_iteration_periodic_check_with_safety_net_two_times(
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(4):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
@@ -334,7 +337,8 @@ def test_monitor_iteration_periodic_check_timeout_from_safety_net(
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(13):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
@@ -388,7 +392,8 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic(
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(13):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
@@ -442,7 +447,8 @@ def test_monitor_iteration_periodic_check_timeout_from_periodic_second_periodic_
     evaluation_monitor,
 ):
     periodic_check = (
-        evaluation_monitor.interval_seconds / evaluation_monitor.sleep_interval
+        evaluation_monitor.periodic_checking_seconds
+        / evaluation_monitor.sleep_interval_seconds
     )
     for i in range(15):
         evaluation_monitor.monitor_iteration(periodic_checks=periodic_check)
