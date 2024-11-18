@@ -349,9 +349,9 @@ def retrieve_decisions():
 
 def delete_tables():
     """
-    DEBUG only
+    Delete scheduler_metrics, framework_start_times, processed_metrics tables
     """
-    logging.warning("All tables will be dropped")
+    logging.warning("Selected tables will be dropped")
     try:
         conn = mysql.connector.connect(**db_config, database=db_name)
         cursor = conn.cursor()
@@ -361,10 +361,10 @@ def delete_tables():
         for table_name in tables:
             drop_query = f"DROP TABLE IF EXISTS {table_name}"
             cursor.execute(drop_query)
-            logging.info(f"Table '{table_name}' has been deleted.")
+            logging.warning(f"Table '{table_name}' has been deleted.")
 
         conn.commit()
-        logging.info("All tables deleted successfully.")
+        logging.info("Selected tables deleted successfully.")
 
     except mysql.connector.Error as err:
         logging.error(f"Error deleting tables: {err}")
