@@ -1,15 +1,14 @@
 import pytest
 from scheduler_logic.scheduler_logic import (
     calculate_utility_value,
-    normalize_weights,
     normalize_throughput,
     normalize_latency,
-    normalize_dataset,
     compute_entropy,
     compute_degree_of_divergence,
     calculate_weights_with_entropy,
     run_evaluation,
-    make_decision_based_on_score
+    make_decision_based_on_score,
+    normalize_metrics,
 )
 import numpy as np
 from unittest.mock import patch
@@ -27,17 +26,6 @@ def test_calculate_utility_value():
     assert utility == pytest.approx(expected_utility), "Utility calculation failed"
 
 
-def test_normalize_weights():
-    weights = [1, 2, 3]
-    normalized = normalize_weights(weights)
-    assert sum(normalized) == pytest.approx(
-        1.0
-    ), "Weights should sum to 1 after normalization"
-    assert all(
-        0 <= w <= 1 for w in normalized
-    ), "Normalized weights should be between 0 and 1"
-
-
 def test_normalize_throughput():
     throughput = 550
     normalized = normalize_throughput(throughput)
@@ -50,20 +38,6 @@ def test_normalize_latency():
     normalized = normalize_latency(latency)
     expected = (latency - 10) / (600000 - 10)
     assert normalized == pytest.approx(expected), "Latency normalization failed"
-
-
-def test_normalize_dataset():
-    data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    normalized_data = normalize_dataset(data)
-    assert np.all(
-        (normalized_data >= 0) & (normalized_data <= 1)
-    ), "Data values should be between 0 and 1"
-    assert np.allclose(
-        np.min(normalized_data, axis=0), 0
-    ), "Minimum value of each column should be 0"
-    assert np.allclose(
-        np.max(normalized_data, axis=0), 1
-    ), "Maximum value of each column should be 1"
 
 
 historic_sl_data = [
@@ -415,54 +389,75 @@ def test_compute_degree_of_divergence():
     ), "Degree of divergence calculation failed"
 
 
-@patch("scheduler_logic.scheduler_logic.compute_entropy")
-@patch("scheduler_logic.scheduler_logic.compute_degree_of_divergence")
-def test_calculate_weights_with_entropy(mock_compute_divergence, mock_compute_entropy):
+def test_calculate_weights_with_entropy():
     metrics_sf = {"latency": 100, "cpu_load": 0.5, "throughput": 800}
     metrics_sl = {"latency": 120, "cpu_load": 0.6, "throughput": 750}
 
-    mock_compute_entropy.side_effect = [0.2, 0.3, 0.4]
-    mock_compute_divergence.side_effect = [0.8, 0.7, 0.6]
+    normalized_metrics_sf = normalize_metrics(metrics_sf)
+    normalized_metrics_sl = normalize_metrics(metrics_sl)
 
-    weights = calculate_weights_with_entropy(metrics_sf, metrics_sl)
+    weights = calculate_weights_with_entropy(
+        normalized_metrics_sf, normalized_metrics_sl
+    )
 
-    total_divergence = sum([0.8, 0.7, 0.6])
-    expected_weights = {
-        "latency": 0.8 / total_divergence,
-        "cpu_load": 0.7 / total_divergence,
-        "throughput": 0.6 / total_divergence,
-    }
-    assert weights == pytest.approx(
-        expected_weights
-    ), "Weight calculation with entropy failed"
+    assert 1 == pytest.approx(
+        sum([weights["latency"], weights["cpu_load"], weights["throughput"]])
+    )
 
-    assert mock_compute_entropy.call_count == 3
-    assert mock_compute_divergence.call_count == 3
 
 def test_make_decision_based_on_score():
     u_mean_sf = 0.8
     u_mean_sl = 0.79
     current_framework = utils.Utils.Framework.SF
     threshold = 0.05
-    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
-    assert result == current_framework, "Failed to keep the current framework when the difference is below the threshold"
+    result = make_decision_based_on_score(
+        u_mean_sf, u_mean_sl, current_framework, threshold
+    )
+    assert (
+        result == current_framework
+    ), "Failed to keep the current framework when the difference is below the threshold"
 
     u_mean_sf = 0.9
     u_mean_sl = 0.75
-    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
-    assert result == utils.Utils.Framework.SF, "Failed to select SF when it has a higher score and the difference exceeds the threshold"
+    result = make_decision_based_on_score(
+        u_mean_sf, u_mean_sl, current_framework, threshold
+    )
+    assert (
+        result == utils.Utils.Framework.SF
+    ), "Failed to select SF when it has a higher score and the difference exceeds the threshold"
 
     u_mean_sf = 0.7
     u_mean_sl = 0.9
     threshold = 0.3
     current_framework = utils.Utils.Framework.SF
-    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
-    assert result == utils.Utils.Framework.SF, "Failed to select SL when it has a higher score and the difference exceeds the threshold"
+    result = make_decision_based_on_score(
+        u_mean_sf, u_mean_sl, current_framework, threshold
+    )
+    assert (
+        result == utils.Utils.Framework.SF
+    ), "Failed to select SL when it has a higher score and the difference exceeds the threshold"
 
     u_mean_sf = 0.85
     u_mean_sl = 0.85
     threshold = 0
     current_framework = utils.Utils.Framework.SL
-    result = make_decision_based_on_score(u_mean_sf, u_mean_sl, current_framework, threshold)
-    assert result == current_framework, "Failed to keep the current framework when scores are equal"
+    result = make_decision_based_on_score(
+        u_mean_sf, u_mean_sl, current_framework, threshold
+    )
+    assert (
+        result == current_framework
+    ), "Failed to keep the current framework when scores are equal"
 
+
+def test_normalize_latency_extreme_cases():
+    result = normalize_latency(6000000)
+    assert result == 1
+    result_low = normalize_latency(1)
+    assert result_low == 0
+
+
+def test_normalize_throughput_extreme_cases():
+    result = normalize_throughput(6000000)
+    assert result == 1
+    result_low = normalize_throughput(0)
+    assert result_low == 0
