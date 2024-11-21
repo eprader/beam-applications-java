@@ -365,6 +365,37 @@ def retrieve_input_rates_current_data(since_timestamp=None):
         return []
 
 
+def retrieve_input_rate_with_exact_timestamp(exact_timestamp):
+    """
+    Retrieve input rate records per second since a given a timestamp.
+
+    Args:
+        exact_timestamp (datetime | None): The starting timestamp to filter the records.
+
+    Returns:
+        list[dict]: A list of dictionaries containing `input_rate_records_per_second` and `timestamp`.
+        Example:
+            [{'input_rate_records_per_second': 500.0, 'timestamp': datetime.datetime(2024, 11, 4, 19, 44, 17)}, ...]
+        If an error occurs, returns an empty list.
+    """
+    try:
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT input_rate_records_per_second, timestamp 
+            FROM scheduler_metrics
+            WHERE timestamp == %s 
+            AND input_rate_records_per_second IS NOT NULL
+            ORDER BY timestamp ASC
+            """
+        cursor.execute(query, (exact_timestamp))
+        result = cursor.fetchall()
+        return result
+    except mysql.connector.Error as err:
+        logging.error(f"Error fetching data: {err}")
+        return []
+
+
 def retrieve_decisions():
     """
     Retrieve decisions from the `framework_start_times` table.
