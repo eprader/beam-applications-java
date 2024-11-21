@@ -115,6 +115,18 @@ def run_evaluation(
         logging.error("Error when making predictions with ARIMA model")
         return current_framework
 
+    if all(prediction == 0 for prediction in predictions):
+        logging.warning("Constant input error")
+        last_timestamp = arima_instance.last_update_timestamp
+        current_input_rate_dict = (
+            database.database_access.retrieve_input_rate_with_exact_timestamp(
+                last_timestamp
+            )
+        )
+        predictions = [
+            current_input_rate_dict[0]["input_rate_records_per_second"]
+            for i in range(window_size)
+        ]
     historic_data_sf = database.database_access.retrieve_historic_data("SF")
     historic_data_sl = database.database_access.retrieve_historic_data("SL")
 
