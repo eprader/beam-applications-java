@@ -449,6 +449,46 @@ def test_make_decision_based_on_score():
     ), "Failed to keep the current framework when scores are equal"
 
 
+@patch("database.database_access.retrieve_input_rates_current_data", autospec=True)
+@patch("database.database_access.store_decision_in_db", autospec=True)
+@patch("database.database_access.retrieve_historic_data", autospec=True)
+@patch(
+    "database.database_access.retrieve_input_rate_with_exact_timestamp", autospec=True
+)
+def test_run_evaluation_starting_with_constant_values(
+    mock_retrieve_current_rate,
+    mock_retrieve_historic,
+    mock_store_decision,
+    mock_retrieve_input_rates,
+):
+    mock_retrieve_input_rates.return_value = input_rate_return_data_2
+    mock_retrieve_current_rate.return_value = input_rate_return_data_2
+
+    def side_effect_function(framework):
+        if framework == "SL":
+            return historic_sl_data
+        elif framework == "SF":
+            return historic_sf_data
+
+    mock_retrieve_historic.side_effect = side_effect_function
+
+    arima_instance = timeseriesPredictor.LoadPredictor.LoadPredictor()
+    current_framework = utils.Utils.Framework.SF
+    window_size = 2
+    result = run_evaluation(current_framework, window_size, arima_instance, True)
+
+    mock_retrieve_input_rates.assert_called_once()
+    mock_store_decision.assert_called_once()
+    store_decision_args = mock_store_decision.call_args
+
+    assert result in [utils.Utils.Framework.SF, utils.Utils.Framework.SL]
+    assert arima_instance.is_model_set == True
+    assert arima_instance.last_update_timestamp == datetime.datetime(
+        2024, 12, 10, 10, 11, 0
+    )
+    # print("store_decision arguments:", store_decision_args)
+
+
 def test_normalize_latency_extreme_cases():
     result = normalize_latency(6000000)
     assert result == 1
